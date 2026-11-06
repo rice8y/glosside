@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <link rel="icon" type="image/png" href="../icons/48.png" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>翻訳 - Glosside</title>
+    <link rel="stylesheet" href="../ui/app.css" />
+    <script type="module" src="index.js"></script>
+  </head>
+  <body class="panel">
+    <header class="masthead">
+      <div class="brand">
+        <img class="mark" src="../icons/glosside.svg" width="35" height="35" alt="" />
+        <div><strong>Glosside</strong><small>Built with PLaMo.</small></div>
+      </div>
+      <button id="settings" class="quiet" aria-label="設定を開く">設定</button>
+    </header>
+    <main>
+      <section class="card" aria-labelledby="text-heading">
+        <div class="row spread">
+          <h1 id="text-heading">テキスト翻訳</h1>
+          <span id="model" class="muted" role="status">モデルを確認中</span>
+        </div>
+        <div class="grid">
+          <label
+            >原文の言語<select id="source-lang">
+              <option value="">自動判定</option>
+              <option value="en">英語</option>
+              <option value="ja">日本語</option>
+            </select></label
+          >
+          <label
+            >翻訳先の言語<select id="target-lang">
+              <option value="ja">日本語</option>
+              <option value="en">英語</option>
+              <option value="zh-hans">中国語（簡体字）</option>
+              <option value="ko">韓国語</option>
+              <option value="fr">フランス語</option>
+              <option value="de">ドイツ語</option>
+              <option value="es">スペイン語</option>
+            </select></label
+          >
+        </div>
+        <label style="margin-top: 16px"
+          >原文<textarea
+            id="source"
+            class="source"
+            placeholder="翻訳する文章を入力"
+            maxlength="16000"
+          ></textarea>
+        </label>
+        <div class="row spread" style="margin-top: 12px">
+          <small id="count">0 / 16,000文字</small>
+          <div class="row">
+            <button id="cancel" hidden>中止</button>
+            <button id="translate" class="primary">翻訳</button>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <p id="status" role="status" aria-live="polite"></p>
+        <div id="result" class="output" aria-live="polite"></div>
+        <div class="row" style="margin-top: 14px">
+          <button id="copy" disabled>訳文をコピー</button>
+          <button id="export" disabled>ファイルに保存</button>
+          <button id="clear" class="quiet">クリア</button>
+        </div>
+      </section>
+      <section class="card" aria-labelledby="page-heading">
+        <h2 id="page-heading">ページの翻訳</h2>
+        <p class="muted">文章を選択して、表示された翻訳アイコンをクリックします。</p>
+        <div class="stack" style="margin-top: 14px">
+          <button id="activate">このタブで使う</button>
+          <button id="page" class="primary">このページを翻訳</button>
+          <div class="row">
+            <button id="restore">原文に戻す</button>
+            <button id="site">このサイトで常に使う</button>
+          </div>
+        </div>
+        <p class="help" style="margin-top: 12px">
+          ページ翻訳後は、訳文にカーソルを合わせると原文を確認できます。
+        </p>
+        <details class="pdf-help">
+          <summary>PDFの翻訳</summary>
+          <p class="muted" id="pdf-help">
+            PDFでも文章を選択して翻訳できます。アイコンが出ない場合は、右クリックの「選択した文字列を翻訳」を使ってください。
+          </p>
+        </details>
+      </section>
+    </main>
+    <footer>原文と訳文は外部に送信しません。</footer>
+  </body>
+</html>
