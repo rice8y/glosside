@@ -1,0 +1,49 @@
+name: Release extension
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Build and package
+        run: npm run package
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+      - name: Verify archive and installer syntax
+        run: |
+          unzip -t release/glosside-chrome.zip
+          (cd release && sha256sum --check glosside-chrome.zip.sha256)
+          sh -n release/install.sh
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            release/glosside-chrome.zip \
+            release/glosside-chrome.zip.sha256 \
+            release/install.sh \
+            release/install.ps1 \
+            --verify-tag --title "Glosside $RELEASE_TAG" \
+            --notes-file docs/release-notes.md
