@@ -1,0 +1,242 @@
+:root {
+  background: var(--surface);
+  width: 420px;
+  min-width: 420px;
+  height: 570px;
+  overflow: hidden;
+}
+body {
+  width: 420px;
+  height: 570px;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  line-height: 1.55;
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px 15px;
+}
+.brand {
+  gap: 9px;
+  font-size: 16px;
+}
+.tabs {
+  display: flex;
+  padding: 0 22px;
+  gap: 22px;
+  border-bottom: 1px solid var(--line);
+}
+.tabs button {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  padding: 9px 2px 11px;
+  color: var(--muted);
+}
+.tabs button[aria-selected='true'] {
+  color: var(--link);
+  border-bottom-color: var(--link);
+}
+main {
+  width: 100%;
+  padding: 20px 22px;
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  margin: 0;
+}
+h1 {
+  font-size: 15px;
+  letter-spacing: 0;
+  margin-bottom: 18px;
+}
+.site {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+#site-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.help {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+  margin-top: 5px;
+}
+.languages {
+  display: grid;
+  grid-template-columns: 1fr 14px 1fr;
+  gap: 9px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+.languages > span {
+  padding-bottom: 10px;
+  text-align: center;
+  color: var(--muted);
+}
+select,
+textarea {
+  font-size: 12px;
+  padding: 8px 9px;
+}
+label {
+  font-weight: 450;
+  font-size: 12px;
+}
+button {
+  font-size: 12px;
+  min-height: 34px;
+}
+button:active:not(:disabled) {
+  background: var(--soft);
+}
+.primary:active:not(:disabled) {
+  background: #4821b7;
+}
+.wide {
+  width: 100%;
+}
+.text-button {
+  border: 0;
+  background: transparent;
+  padding: 6px 1px;
+  color: var(--link);
+  font-size: 11px;
+}
+.page-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+}
+.setting {
+  display: grid;
+  grid-template-columns: 1fr 178px;
+  gap: 12px;
+  align-items: center;
+  margin: 14px 0;
+}
+.toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin: 19px 0;
+}
+input[role='switch'] {
+  appearance: none;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 19px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--line);
+  position: relative;
+  cursor: pointer;
+  margin: 0;
+}
+input[role='switch']::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 2px #0003;
+}
+input[role='switch']:checked {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+input[role='switch']:checked::after {
+  left: 15px;
+}
+textarea {
+  margin-top: 6px;
+  resize: vertical;
+  max-height: 160px;
+}
+.glossary-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.model-card {
+  padding: 15px;
+  background: var(--soft);
+  border-radius: 9px;
+  margin-bottom: 18px;
+}
+#setup {
+  margin-top: 14px;
+}
+#optimization-progress {
+  display: block;
+  margin: 14px 0;
+}
+#optimization-result {
+  padding: 12px 14px;
+  margin-top: 12px;
+  border-radius: 8px;
+  background: var(--soft);
+}
+#optimization-result h2 {
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+#optimization-result dl {
+  margin: 0;
+  font-size: 11px;
+}
+#optimization-result dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+#optimization-result dt {
+  color: var(--muted);
+}
+#optimization-result dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+footer {
+  padding: 12px 22px;
+  border-top: 1px solid var(--line);
+  text-align: right;
+  font-size: 10px;
+  background: var(--surface);
+}
+#error {
+  line-height: 1.45;
+  font-size: 11px;
+  margin-bottom: 16px;
+  overflow-wrap: anywhere;
+}
+@media (forced-colors: active) {
+  input[role='switch'] {
+    appearance: auto;
+  }
+  input[role='switch']::after {
+    display: none;
+  }
+}
+
+html:not([data-localized]) body {
+  visibility: hidden;
+}

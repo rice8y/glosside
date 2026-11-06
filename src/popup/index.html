@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title data-i18n="Translation and settings - Glosside">
+      Translation and settings - Glosside
+    </title>
+    <link rel="icon" type="image/png" href="../icons/48.png" />
+    <link rel="stylesheet" href="../ui/app.css" />
+    <link rel="stylesheet" href="popup.css" />
+    <script type="module" src="index.js"></script>
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <img src="../icons/glosside.svg" width="28" height="28" alt="" /><strong>Glosside</strong>
+      </div>
+      <button
+        id="options"
+        class="text-button"
+        title="Open settings in a tab"
+        data-i18n="All settings ↗"
+        data-i18n-title="Open settings in a tab"
+      >
+        All settings ↗
+      </button>
+    </header>
+    <div
+      class="tabs"
+      role="tablist"
+      aria-label="Translation and settings"
+      data-i18n-aria-label="Translation and settings"
+    >
+      <button
+        id="translation-tab"
+        role="tab"
+        aria-controls="translation"
+        aria-selected="true"
+        data-i18n="Translation"
+      >
+        Translation
+      </button>
+      <button
+        id="preferences-tab"
+        role="tab"
+        aria-controls="preferences"
+        aria-selected="false"
+        tabindex="-1"
+        data-i18n="Settings"
+      >
+        Settings
+      </button>
+      <button
+        id="model-tab"
+        role="tab"
+        aria-controls="model"
+        aria-selected="false"
+        tabindex="-1"
+        data-i18n="Model"
+      >
+        Model
+      </button>
+    </div>
+    <main>
+      <p id="error" role="alert" hidden=""></p>
+      <section id="translation" role="tabpanel" aria-labelledby="translation-tab">
+        <div id="site" class="site" hidden="">
+          <div>
+            <p id="site-name"></p>
+            <p id="site-state" class="help"></p>
+          </div>
+          <button id="allow-site" hidden="" data-i18n="Always allow">Always allow</button>
+        </div>
+        <div class="languages">
+          <label for="sourceLanguage">
+            <span data-i18n="Source">Source</span>
+            <select id="sourceLanguage" data-setting="">
+              <option value="" data-i18n="Detect automatically">Detect automatically</option>
+              <option value="en" data-i18n="English">English</option>
+              <option value="ja" data-i18n="Japanese">Japanese</option>
+              <option value="zh-hans" data-i18n="Chinese (Simplified)">Chinese (Simplified)</option>
+              <option value="ko" data-i18n="Korean">Korean</option>
+              <option value="fr" data-i18n="French">French</option>
+              <option value="de" data-i18n="German">German</option>
+              <option value="es" data-i18n="Spanish">Spanish</option>
+            </select></label
+          >
+          <span aria-hidden="true">→</span>
+          <label for="targetLanguage">
+            <span data-i18n="Target">Target</span>
+            <select id="targetLanguage" data-setting="">
+              <option value="ja" data-i18n="Japanese">Japanese</option>
+              <option value="en" data-i18n="English">English</option>
+              <option value="zh-hans" data-i18n="Chinese (Simplified)">Chinese (Simplified)</option>
+              <option value="ko" data-i18n="Korean">Korean</option>
+              <option value="fr" data-i18n="French">French</option>
+              <option value="de" data-i18n="German">German</option>
+              <option value="es" data-i18n="Spanish">Spanish</option>
+            </select></label
+          >
+        </div>
+        <button
+          id="translate-page"
+          class="primary wide"
+          disabled=""
+          data-i18n="Translate this page"
+        >
+          Translate this page
+        </button>
+        <div class="page-actions">
+          <button id="restore" class="text-button" disabled="" data-i18n="Restore original">
+            Restore original</button
+          ><button id="panel" class="text-button" disabled="" data-i18n="Open side panel">
+            Open side panel
+          </button>
+        </div>
+        <div class="divider"></div>
+        <label class="setting" for="htmlMode"
+          ><span data-i18n="Text selection on web pages">Text selection on web pages</span
+          ><select id="htmlMode" data-setting="">
+            <option value="Button" data-i18n="Show translation icon">Show translation icon</option>
+            <option value="Auto" data-i18n="Translate automatically">
+              Translate automatically
+            </option>
+            <option value="Shortcut" data-i18n="Keyboard shortcut only">
+              Keyboard shortcut only
+            </option>
+          </select></label
+        >
+        <label class="setting" for="pdfMode"
+          ><span data-i18n="Text selection in PDFs">Text selection in PDFs</span
+          ><select id="pdfMode" data-setting="">
+            <option value="Button" data-i18n="Show translation icon">Show translation icon</option>
+            <option value="Auto" data-i18n="Translate automatically">
+              Translate automatically
+            </option>
+            <option value="Shortcut" data-i18n="Keyboard shortcut only">
+              Keyboard shortcut only
+            </option>
+          </select></label
+        >
+      </section>
+      <section id="preferences" role="tabpanel" aria-labelledby="preferences-tab" hidden="">
+        <h1 data-i18n="Translation settings">Translation settings</h1>
+        <label class="setting" for="japaneseForm"
+          ><span data-i18n="Japanese writing style">Japanese writing style</span
+          ><select id="japaneseForm" data-setting="">
+            <option value="polite" data-i18n="Polite">Polite</option>
+            <option value="plain" data-i18n="Plain">Plain</option>
+          </select></label
+        >
+        <label class="toggle"
+          ><span data-i18n="Show near PDF selection">Show near PDF selection</span
+          ><input type="checkbox" id="nativePdfPosition" data-setting="" role="switch"
+        /></label>
+        <label class="toggle"
+          ><span data-i18n="Show translations only in the side panel"
+            >Show translations only in the side panel</span
+          ><input type="checkbox" id="panelOnly" data-setting="" role="switch"
+        /></label>
+        <label class="toggle"
+          ><span data-i18n="Include navigation text in whole-page translation"
+            >Include navigation text in whole-page translation</span
+          ><input type="checkbox" id="includeNavigation" data-setting="" role="switch"
+        /></label>
+        <label class="setting" for="activeGlossaryId"
+          ><span data-i18n="Active glossary">Active glossary</span
+          ><select id="activeGlossaryId" data-setting="">
+            <option value="" data-i18n="None">None</option>
+          </select></label
+        >
+        <a
+          class="glossary-link"
+          href="../glossary/index.html"
+          target="_blank"
+          rel="noopener"
+          data-i18n="Edit glossaries"
+          >Edit glossaries</a
+        >
+      </section>
+      <section id="model" role="tabpanel" aria-labelledby="model-tab" hidden="">
+        <h1 data-i18n="Translation model">Translation model</h1>
+        <div class="model-card">
+          <strong>PLaMo 3 Translate 0.8B</strong>
+          <p id="model-detail" class="help" data-i18n="Checking model…">Checking model…</p>
+          <button id="setup" class="primary wide" data-i18n="Set up model">Set up model</button>
+        </div>
+        <label class="setting" for="backend"
+          ><span data-i18n="Processing">Processing</span
+          ><select id="backend" data-setting="">
+            <option value="auto" data-i18n="Automatic (prefer GPU)">Automatic (prefer GPU)</option>
+            <option value="cpu">CPU</option>
+          </select></label
+        >
+        <label class="setting" for="memoryMode"
+          ><span data-i18n="Keep model loaded for">Keep model loaded for</span
+          ><select id="memoryMode" data-setting="">
+            <option value="economy" data-i18n="30 seconds">30 seconds</option>
+            <option value="balanced" data-i18n="10 minutes">10 minutes</option>
+            <option value="reading" data-i18n="1 hour">1 hour</option>
+          </select></label
+        >
+        <div class="divider"></div>
+        <button id="optimize" class="wide" data-i18n="Optimize processing">
+          Optimize processing</button
+        ><button id="cancel-optimize" class="wide" hidden="" data-i18n="Cancel measurement">
+          Cancel measurement
+        </button>
+        <progress
+          id="optimization-progress"
+          aria-label="Optimization progress"
+          hidden=""
+          data-i18n-aria-label="Optimization progress"
+        ></progress>
+        <section
+          id="optimization-result"
+          aria-label="Optimization results"
+          hidden=""
+          data-i18n-aria-label="Optimization results"
+        >
+          <h2 data-i18n="Optimization results">Optimization results</h2>
+          <dl>
+            <div>
+              <dt data-i18n="Backend">Backend</dt>
+              <dd id="optimized-backend"></dd>
+            </div>
+            <div>
+              <dt data-i18n="CPU threads">CPU threads</dt>
+              <dd id="optimized-threads"></dd>
+            </div>
+            <div>
+              <dt data-i18n="Batch size">Batch size</dt>
+              <dd id="optimized-batch"></dd>
+            </div>
+          </dl>
+        </section>
+        <div class="page-actions">
+          <button id="unload" class="text-button" data-i18n="Release model memory">
+            Release model memory</button
+          ><button id="clear-cache" class="text-button" data-i18n="Clear translation cache">
+            Clear translation cache
+          </button>
+        </div>
+      </section>
+    </main>
+    <footer>Built with PLaMo.</footer>
+  </body>
+</html>
