@@ -38,7 +38,7 @@ To update, run the installer again, click **Reload** on Glosside in `chrome://ex
 
 You can also [download the ZIP directly](https://github.com/rice8y/glosside/releases/latest/download/glosside-chrome.zip), extract it, and load its `glosside` folder manually. The ZIP is shared across platforms; model weights are downloaded separately.
 
-### Build locally
+### From Source
 
 Requires Node.js 22 or later.
 
