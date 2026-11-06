@@ -1,0 +1,18 @@
+{
+  "wllama": "3.8.1",
+  "llamaCpp": "46ca246de9bb1c35269722a6240d37d9dfd79cad",
+  "patchPR": 30045,
+  "patchCommits": [
+    "907712e502edf70ed06191fe5bacb35eb55054bd",
+    "418ad80"
+  ],
+  "patchSha256": "862088fb3f634b862b000288fd0d22c2b8f71a9bc3d1f3559ae5268fc4848d1d",
+  "emscripten": "6.0.13",
+  "dawn": "v20260317.182325",
+  "abi": "wllama-3.8.1-plamo3-static-v2",
+  "files": {
+    "wllama.js": "db1a385d292420bd5b15b70716bd0c0234148522261a1b3938655d22295df0e9",
+    "wllama.wasm": "9a86ea87353be77385af9d748ee3f29617f74e25257a4e02b340035adb85f31e",
+    "source-map.ts": "f317f40c32d1f5094a759e057b0425ff70a03ac2be46a0178e6ae911ea30641a"
+  }
+}
