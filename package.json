@@ -9,7 +9,8 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run build"
+    "check": "npm run typecheck && npm run build",
+    "package": "npm run typecheck && node scripts/build.mjs --release && node scripts/package.mjs"
   },
   "dependencies": {
     "@wllama/wllama": "3.8.1",

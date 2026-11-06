@@ -4,6 +4,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { deflateSync } from 'node:zlib';
 import { buildDocuments } from './documents.mjs';
+const releaseBuild = process.argv.includes('--release');
 const out = path.resolve('dist');
 const target = 'chrome151';
 await rm(out, { recursive: true, force: true });
@@ -107,7 +108,7 @@ await build({
   format: 'esm',
   platform: 'browser',
   target,
-  sourcemap: true,
+  sourcemap: !releaseBuild,
   plugins: [staticRuntime],
   logLevel: 'warning',
 });
@@ -117,7 +118,7 @@ await build({
   bundle: true,
   format: 'iife',
   target,
-  sourcemap: true,
+  sourcemap: !releaseBuild,
 });
 async function copyStatic(dir) {
   for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -231,7 +232,7 @@ await put(
       runtime: runtimeManifest,
       runtimePatch: runtimeManifest.abi,
       model: JSON.parse(await read('vendor/model-manifest.json')),
-      releaseApproved: false,
+      buildMode: releaseBuild ? 'release' : 'development',
     },
     null,
     2,
