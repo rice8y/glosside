@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="icon" type="image/png" href="../icons/48.png" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title data-i18n="Settings - Glosside">Settings - Glosside</title>
+    <link rel="stylesheet" href="../ui/app.css" />
+    <link rel="stylesheet" href="settings.css" />
+    <script type="module" src="index.js"></script>
+  </head>
+  <body class="settings-page">
+    <header class="settings-header">
+      <img class="app-icon" src="../icons/glosside.svg" width="24" height="24" alt="" /><span
+        >Glosside</span
+      >
+    </header>
+    <main>
+      <h1 data-i18n="Settings">Settings</h1>
+
+      <section aria-labelledby="model-heading">
+        <h2 id="model-heading" data-i18n="Translation model">Translation model</h2>
+        <div class="setting">
+          <div>
+            <p class="setting-label">PLaMo 3 Translate 0.8B</p>
+            <p class="help" data-i18n="Download size: 573 MB">Download size: 573 MB</p>
+          </div>
+          <p id="model-state" class="model-state" role="status" data-i18n="Checking model…">
+            Checking model…
+          </p>
+        </div>
+        <progress
+          id="progress"
+          value="0"
+          max="573123200"
+          aria-label="Model download progress"
+          hidden=""
+          data-i18n-aria-label="Model download progress"
+        ></progress>
+        <div id="model-download">
+          <label class="check consent"
+            ><input type="checkbox" id="consent" /><span>
+              <span data-i18n="I agree to the">I agree to the</span>
+              <a
+                href="../vendor/licenses/plamo-en.txt"
+                target="_blank"
+                rel="noopener"
+                data-i18n="PLaMo Community License"
+                >PLaMo Community License</a
+              >
+              <span data-i18n="and have read the">and have read the</span>
+              <a
+                href="../docs/privacy-policy.html"
+                target="_blank"
+                rel="noopener"
+                data-i18n="privacy policy"
+                >privacy policy</a
+              >
+              <span data-i18n=".">.</span>
+            </span></label
+          >
+          <div class="row">
+            <button id="download" class="primary" data-i18n="Download model">Download model</button
+            ><button id="pause" hidden="" data-i18n="Pause download">Pause download</button>
+          </div>
+        </div>
+        <details class="model-details">
+          <summary data-i18n="Model details">Model details</summary>
+
+          <dl class="model-specs">
+            <div>
+              <dt data-i18n="Model format">Model format</dt>
+              <dd>GGUF (Q4_K_M)</dd>
+            </div>
+            <div>
+              <dt data-i18n="Download source">Download source</dt>
+              <dd>Hugging Face</dd>
+            </div>
+            <div>
+              <dt data-i18n="Translation processing">Translation processing</dt>
+              <dd data-i18n="Runs in your browser">Runs in your browser</dd>
+            </div>
+          </dl>
+          <p
+            data-i18n="For commercial registration and usage limits, see the model license."
+            class="help"
+          >
+            For commercial registration and usage limits, see the model license.
+          </p>
+        </details>
+      </section>
+      <section aria-labelledby="translation-heading">
+        <h2 id="translation-heading" data-i18n="Translation">Translation</h2>
+        <div class="setting">
+          <label for="targetLanguage" data-i18n="Translate to">Translate to</label
+          ><select id="targetLanguage">
+            <option value="ja" data-i18n="Japanese">Japanese</option>
+            <option value="en" data-i18n="English">English</option>
+            <option value="zh-hans" data-i18n="Chinese (Simplified)">Chinese (Simplified)</option>
+            <option value="ko" data-i18n="Korean">Korean</option>
+            <option value="fr" data-i18n="French">French</option>
+            <option value="de" data-i18n="German">German</option>
+            <option value="es" data-i18n="Spanish">Spanish</option>
+          </select>
+        </div>
+        <div class="setting">
+          <label for="sourceLanguage" data-i18n="Source language">Source language</label
+          ><select id="sourceLanguage">
+            <option value="" data-i18n="Detect automatically">Detect automatically</option>
+            <option value="ja" data-i18n="Japanese">Japanese</option>
+            <option value="en" data-i18n="English">English</option>
+            <option value="zh-hans" data-i18n="Chinese (Simplified)">Chinese (Simplified)</option>
+            <option value="ko" data-i18n="Korean">Korean</option>
+            <option value="fr" data-i18n="French">French</option>
+            <option value="de" data-i18n="German">German</option>
+            <option value="es" data-i18n="Spanish">Spanish</option>
+          </select>
+        </div>
+        <div class="setting">
+          <div>
+            <label for="htmlMode" data-i18n="Text selection on web pages"
+              >Text selection on web pages</label
+            >
+          </div>
+          <select id="htmlMode">
+            <option value="Button" data-i18n="Show translation icon">Show translation icon</option>
+            <option value="Auto" data-i18n="Translate automatically">
+              Translate automatically
+            </option>
+            <option value="Shortcut" data-i18n="Keyboard shortcut only">
+              Keyboard shortcut only
+            </option>
+          </select>
+        </div>
+      </section>
+      <section aria-labelledby="access-heading">
+        <h2 id="access-heading" data-i18n="Web pages and PDFs">Web pages and PDFs</h2>
+        <div class="setting access-setting">
+          <label data-i18n="Use on all websites" for="all-sites">Use on all websites</label
+          ><input type="checkbox" id="all-sites" role="switch" disabled="" />
+        </div>
+        <h3 data-i18n="Individually allowed websites" id="sites-heading" hidden="">
+          Individually allowed websites
+        </h3>
+        <div id="sites" class="site-list" hidden=""></div>
+        <div class="setting">
+          <div>
+            <label for="nativePdfPosition" data-i18n="Show PDF translations near the selection"
+              >Show PDF translations near the selection</label
+            >
+            <p
+              class="help"
+              data-i18n="Uses Chrome’s debugger permission and shows a debugging notification. When off, translations appear in the upper-right corner."
+            >
+              Uses Chrome’s debugger permission and shows a debugging notification. When off,
+              translations appear in the upper-right corner.
+            </p>
+          </div>
+          <input type="checkbox" id="nativePdfPosition" />
+        </div>
+        <div class="setting">
+          <label for="pdfMode" data-i18n="Text selection in PDFs">Text selection in PDFs</label
+          ><select id="pdfMode">
+            <option value="Button" data-i18n="Show translation icon">Show translation icon</option>
+            <option value="Auto" data-i18n="Translate automatically">
+              Translate automatically
+            </option>
+            <option value="Shortcut" data-i18n="Keyboard shortcut only">
+              Keyboard shortcut only
+            </option>
+          </select>
+        </div>
+      </section>
+      <details class="settings-group">
+        <summary data-i18n="Advanced">Advanced</summary>
+        <div class="group-content">
+          <div class="setting">
+            <label for="japaneseForm" data-i18n="Japanese writing style"
+              >Japanese writing style</label
+            ><select id="japaneseForm">
+              <option value="polite" data-i18n="Polite">Polite</option>
+              <option value="plain" data-i18n="Plain">Plain</option>
+            </select>
+          </div>
+          <div class="setting">
+            <label for="backend" data-i18n="Processing">Processing</label
+            ><select id="backend">
+              <option value="auto" data-i18n="Automatic (prefer GPU)">
+                Automatic (prefer GPU)
+              </option>
+              <option value="cpu">CPU</option>
+            </select>
+          </div>
+          <div class="setting">
+            <label for="memoryMode" data-i18n="Keep model loaded for">Keep model loaded for</label
+            ><select id="memoryMode">
+              <option value="economy" data-i18n="30 seconds">30 seconds</option>
+              <option value="balanced" data-i18n="10 minutes">10 minutes</option>
+              <option value="reading" data-i18n="1 hour">1 hour</option>
+            </select>
+          </div>
+          <div class="setting">
+            <div>
+              <p class="setting-label" data-i18n="Device performance">Device performance</p>
+              <p
+                class="help"
+                id="optimization-status"
+                data-i18n="Compare processing settings using built-in sample text. Allow about a minute."
+              >
+                Compare processing settings using built-in sample text. Allow about a minute.
+              </p>
+            </div>
+            <div class="row">
+              <button id="optimize" data-i18n="Optimize processing">Optimize processing</button
+              ><button id="cancel-optimize" hidden="" data-i18n="Cancel">Cancel</button>
+            </div>
+          </div>
+          <label class="check"
+            ><input id="panelOnly" type="checkbox" /><span
+              data-i18n="Show translations only in the side panel"
+              >Show translations only in the side panel</span
+            ></label
+          >
+          <p
+            class="help check-help"
+            data-i18n="Websites may be able to read translations displayed on their pages. Use the side panel for sensitive text."
+          >
+            Websites may be able to read translations displayed on their pages. Use the side panel
+            for sensitive text.
+          </p>
+          <label class="check"
+            ><input id="includeNavigation" type="checkbox" /><span
+              data-i18n="Include navigation text in whole-page translation"
+              >Include navigation text in whole-page translation</span
+            ></label
+          >
+          <a
+            class="glossary-link"
+            href="../glossary/index.html"
+            target="_blank"
+            rel="noopener"
+            data-i18n="Edit glossaries"
+            >Edit glossaries</a
+          >
+        </div>
+      </details>
+      <details class="settings-group">
+        <summary data-i18n="Data management">Data management</summary>
+        <div class="group-content">
+          <p
+            class="help"
+            data-i18n="Translation history is not saved. Settings and glossaries stay on this device. Diagnostics exclude source text, translations and URLs."
+          >
+            Translation history is not saved. Settings and glossaries stay on this device.
+            Diagnostics exclude source text, translations and URLs.
+          </p>
+          <div class="maintenance-actions">
+            <button id="unload" data-i18n="Release model memory">Release model memory</button
+            ><button id="clear-cache" data-i18n="Clear translation cache">
+              Clear translation cache</button
+            ><button id="diagnostics" data-i18n="Export diagnostics">Export diagnostics</button
+            ><button id="reset" data-i18n="Reset settings">Reset settings</button
+            ><button id="delete-model" class="danger" data-i18n="Delete model">Delete model</button>
+          </div>
+        </div>
+      </details>
+      <div class="save-bar">
+        <button id="save" class="primary" data-i18n="Save changes">Save changes</button>
+        <p id="status" role="status" aria-live="polite"></p>
+      </div>
+      <footer>
+        <p data-i18n="Built with PLaMo.">Built with PLaMo.</p>
+        <p class="footer-links">
+          <a href="../docs/license-notices.html" data-i18n="Licenses">Licenses</a
+          ><a href="../docs/supported-environments.html" data-i18n="Supported environments"
+            >Supported environments</a
+          ><a href="../docs/privacy-policy.html" data-i18n="Privacy">Privacy</a>
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>
