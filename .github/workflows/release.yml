@@ -46,4 +46,4 @@ jobs:
             release/install.sh \
             release/install.ps1 \
             --verify-tag --title "Glosside $RELEASE_TAG" \
-            --notes-file docs/release-notes.md
+            --generate-notes

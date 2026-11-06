@@ -51,8 +51,6 @@ npm run build
 
 Load `dist/` from `chrome://extensions` using **Load unpacked**, then download the model in Glosside's settings. After rebuilding, reload the extension and your open pages.
 
-For release packaging, see [Publishing a release](docs/releasing.md).
-
 ## Usage
 
 Click the extension icon to activate the current page, select text, and click the translation button. Use **Translate this page** for whole-page translation, or the side panel for manual input. Whole-page translation is unavailable in panel-only mode.
