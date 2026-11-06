@@ -20,3 +20,5 @@ The release workflow verifies that the tag, package, and extension versions matc
 The installer resolves the latest release to a specific tag before downloading the archive and checksum. An existing installation is replaced only if it has the installer's ownership marker. A failed download, checksum, or extraction leaves the installed version intact. The extension directory stays at the same path across updates; users reload the unpacked extension in Chrome afterward.
 
 To reproduce a particular release locally, use `RELEASE_TAG=v0.1.0 npm run package` at that tag. Re-running the workflow for an already published tag does not overwrite its assets; publish a new version instead.
+
+For a specific version or destination, `install.sh` accepts `--version v0.1.0 --dir /absolute/path`; `install.ps1` accepts `-Version v0.1.0 -InstallDir C:\path\to\Glosside`. With the shell one-liner, pass options after `sh -s --`.

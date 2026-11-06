@@ -13,15 +13,13 @@ Download and install the latest release without Node.js or build tools.
 **macOS / Linux**
 
 ```sh
-curl -fsSL https://github.com/rice8y/glosside/releases/latest/download/install.sh -o /tmp/glosside-install.sh && sh /tmp/glosside-install.sh
+curl -fsSL https://github.com/rice8y/glosside/releases/latest/download/install.sh | sh
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-$installer = Join-Path $env:TEMP 'glosside-install.ps1'
-Invoke-WebRequest https://github.com/rice8y/glosside/releases/latest/download/install.ps1 -OutFile $installer -ErrorAction Stop
-powershell -NoProfile -ExecutionPolicy Bypass -File $installer
+irm https://github.com/rice8y/glosside/releases/latest/download/install.ps1 | iex
 ```
 
 The installer detects the platform, verifies the ZIP's SHA-256 checksum, and extracts it to:
@@ -37,8 +35,6 @@ The installer detects the platform, verifies the ZIP's SHA-256 checksum, and ext
 3. Open Glosside's settings, review the model license, and download the model (about 573 MB).
 
 To update, run the installer again, click **Reload** on Glosside in `chrome://extensions`, and reload your open pages. Keep the installation directory in place while using the extension.
-
-For a specific version or directory, use `sh /tmp/glosside-install.sh --version v0.1.0 --dir /absolute/path`. PowerShell accepts `-Version v0.1.0 -InstallDir C:\path\to\Glosside`.
 
 You can also [download the ZIP directly](https://github.com/rice8y/glosside/releases/latest/download/glosside-chrome.zip), extract it, and load its `glosside` folder manually. The ZIP is shared across platforms; model weights are downloaded separately.
 
