@@ -4,20 +4,60 @@ Translate selected text, web pages, and PDF selections locally in Chrome with PL
 
 ## Installation
 
-Requires desktop Chrome 151+ and Node.js 22+ to build.
+Requires desktop Chrome 151 or later.
+
+### From Releases
+
+Download and install the latest release without Node.js or build tools.
+
+**macOS / Linux**
 
 ```sh
+curl -fsSL https://github.com/rice8y/glosside/releases/latest/download/install.sh -o /tmp/glosside-install.sh && sh /tmp/glosside-install.sh
+```
+
+**Windows (PowerShell)**
+
+```powershell
+$installer = Join-Path $env:TEMP 'glosside-install.ps1'
+Invoke-WebRequest https://github.com/rice8y/glosside/releases/latest/download/install.ps1 -OutFile $installer -ErrorAction Stop
+powershell -NoProfile -ExecutionPolicy Bypass -File $installer
+```
+
+The installer detects the platform, verifies the ZIP's SHA-256 checksum, and extracts it to:
+
+| Platform | Default directory                                     |
+| -------- | ----------------------------------------------------- |
+| macOS    | `~/Library/Application Support/Glosside/extension`    |
+| Linux    | `${XDG_DATA_HOME:-~/.local/share}/glosside/extension` |
+| Windows  | `%LOCALAPPDATA%\Glosside\extension`                   |
+
+1. Open `chrome://extensions` and enable **Developer mode**.
+2. Choose **Load unpacked** and select the directory printed by the installer.
+3. Open Glosside's settings, review the model license, and download the model (about 573 MB).
+
+To update, run the installer again, click **Reload** on Glosside in `chrome://extensions`, and reload your open pages. Keep the installation directory in place while using the extension.
+
+For a specific version or directory, use `sh /tmp/glosside-install.sh --version v0.1.0 --dir /absolute/path`. PowerShell accepts `-Version v0.1.0 -InstallDir C:\path\to\Glosside`.
+
+You can also [download the ZIP directly](https://github.com/rice8y/glosside/releases/latest/download/glosside-chrome.zip), extract it, and load its `glosside` folder manually. The ZIP is shared across platforms; model weights are downloaded separately.
+
+### Build locally
+
+Requires Node.js 22 or later.
+
+```sh
+git clone https://github.com/rice8y/glosside.git
+cd glosside
 npm ci
 npm run build
 ```
 
-1. Open `chrome://extensions` and enable **Developer mode**.
-2. Choose **Load unpacked** and select `dist/`.
-3. Open Glosside's settings, review the model license, and download the model (about 573 MB).
+Load `dist/` from `chrome://extensions` using **Load unpacked**, then download the model in Glosside's settings. After rebuilding, reload the extension and your open pages.
 
-After updating, reload the extension and the pages you want to translate.
+For release packaging, see [Publishing a release](docs/releasing.md).
 
-## Useage
+## Usage
 
 Click the extension icon to activate the current page, select text, and click the translation button. Use **Translate this page** for whole-page translation, or the side panel for manual input. Whole-page translation is unavailable in panel-only mode.
 
