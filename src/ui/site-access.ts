@@ -1,12 +1,16 @@
 import { ui } from '../shared/client';
-import { t } from '../ui/locale';
-import { el, button } from '../ui/dom';
+import { t } from './locale';
+import { el, button } from './dom';
 const allOrigins = ['https://*/*', 'http://*/*'];
 
 export function mountSiteAccess(reportError: (error: unknown) => void) {
-  const toggle = document.getElementById('all-sites') as HTMLInputElement;
-  const list = document.getElementById('sites')!;
-  const heading = document.getElementById('sites-heading')!;
+  const toggle = document.getElementById('all-sites') as HTMLInputElement | null;
+  const enable = document.getElementById('enable-all-sites') as HTMLButtonElement;
+  const card = document.getElementById('access-onboarding')!;
+  const state = document.getElementById('access-state')!;
+  const message = document.getElementById('access-message')!;
+  const list = document.getElementById('sites');
+  const heading = document.getElementById('sites-heading');
   let busy = false,
     destroyed = false,
     revision = 0;
@@ -22,8 +26,20 @@ export function mountSiteAccess(reportError: (error: unknown) => void) {
     if (destroyed || version !== revision) return;
     const allowed = checks.filter((site) => site.allowed).map((site) => site.origin);
     const all = allOrigins.every((origin) => allowed.includes(origin));
-    toggle.checked = all;
-    toggle.disabled = busy;
+    if (toggle) {
+      toggle.checked = all;
+      toggle.disabled = busy;
+    }
+    card.hidden = false;
+    card.classList.toggle('access-enabled', all);
+    enable.hidden = all;
+    enable.disabled = busy;
+    document.getElementById('access-intro')!.hidden = all;
+    document.getElementById('access-alternative')!.hidden = all;
+    state.textContent = all
+      ? t('Enabled on all websites.')
+      : t('On websites you have not allowed, open Glosside from the toolbar before selecting text.');
+    if (!list || !heading) return;
     const shown = all ? [] : allowed;
     list.hidden = heading.hidden = !shown.length;
     list.replaceChildren(
@@ -53,8 +69,10 @@ export function mountSiteAccess(reportError: (error: unknown) => void) {
   function run(operation: () => Promise<void>) {
     if (busy || destroyed) return;
     busy = true;
-    toggle.disabled = true;
-    for (const control of list.querySelectorAll('button')) control.disabled = true;
+    if (toggle) toggle.disabled = true;
+    enable.disabled = true;
+    message.hidden = true;
+    for (const control of list?.querySelectorAll('button') ?? []) control.disabled = true;
     // Start permission requests in the user gesture's synchronous call stack.
     void operation()
       .catch(reportError)
@@ -63,13 +81,18 @@ export function mountSiteAccess(reportError: (error: unknown) => void) {
         await refresh().catch(reportError);
       });
   }
-  toggle.onchange = () => {
-    const enabled = toggle.checked;
+  function setAll(enabled: boolean) {
     run(async () => {
       const granted = enabled
         ? await chrome.permissions.request({ origins: allOrigins })
         : await chrome.permissions.remove({ origins: allOrigins });
-      if (!granted) return;
+      if (!granted) {
+        message.textContent = t(
+          'Website access was not allowed. Click the extension toolbar icon to enable only the current tab.',
+        );
+        message.hidden = false;
+        return;
+      }
       const { sites = [] } = await chrome.storage.local.get<{ sites?: string[] }>('sites');
       await chrome.storage.local.set({
         sites: enabled
@@ -78,7 +101,9 @@ export function mountSiteAccess(reportError: (error: unknown) => void) {
       });
       await ui('register-sites');
     });
-  };
+  }
+  if (toggle) toggle.onchange = () => setAll(toggle.checked);
+  enable.onclick = () => setAll(true);
   const permissionChanged = () => {
     void refresh().catch(reportError);
   };
@@ -93,7 +118,8 @@ export function mountSiteAccess(reportError: (error: unknown) => void) {
     destroy() {
       destroyed = true;
       revision++;
-      toggle.onchange = null;
+      if (toggle) toggle.onchange = null;
+      enable.onclick = null;
       chrome.permissions.onAdded.removeListener(permissionChanged);
       chrome.permissions.onRemoved.removeListener(permissionChanged);
       chrome.storage.onChanged.removeListener(storageChanged);

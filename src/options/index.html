@@ -18,6 +18,35 @@
     <main>
       <h1 data-i18n="Settings">Settings</h1>
 
+      <section
+        id="access-onboarding"
+        class="access-onboarding"
+        aria-labelledby="access-title"
+        hidden=""
+      >
+        <h2 id="access-title" data-i18n="Translate text as you browse">
+          Translate text as you browse
+        </h2>
+        <p
+          id="access-intro"
+          data-i18n="Allow website access to use selection translation without opening Glosside on each page."
+        >
+          Allow website access to use selection translation without opening Glosside on each page.
+        </p>
+        <p id="access-state" role="status"></p>
+        <button id="enable-all-sites" class="primary" disabled="" data-i18n="Use on all websites">
+          Use on all websites
+        </button>
+        <p
+          id="access-alternative"
+          class="help"
+          data-i18n="Prefer individual sites? Open Glosside from the toolbar on a page, then choose Always allow. Chrome internal pages and the Chrome Web Store are not supported."
+        >
+          Prefer individual sites? Open Glosside from the toolbar on a page, then choose Always
+          allow. Chrome internal pages and the Chrome Web Store are not supported.
+        </p>
+        <p id="access-message" role="alert" hidden=""></p>
+      </section>
       <section aria-labelledby="model-heading">
         <h2 id="model-heading" data-i18n="Translation model">Translation model</h2>
         <div class="setting">

@@ -115,7 +115,7 @@
   "Translation processing": "翻訳の処理",
   "Runs in your browser": "ブラウザ上で実行",
   "For commercial registration and usage limits, see the model license.": "商用利用の登録や利用規模に関する条件は、モデルのライセンスをご確認ください。",
-  "Use on all websites": "すべてのWebサイトで使用",
+  "Use on all websites": "すべてのWebサイトで使う",
   "Individually allowed websites": "個別に許可したサイト",
   "HTTPS websites": "HTTPSのWebサイト",
   "HTTP websites": "HTTPのWebサイト",
@@ -153,5 +153,9 @@
   "Translation history is not saved. Settings and glossaries stay on this device. Diagnostics exclude source text, translations and URLs.": "翻訳履歴は保存しません。設定と用語集は端末に保存します。診断情報には原文や訳文、URLを含めません。",
   "Websites may be able to read translations displayed on their pages. Use the side panel for sensitive text.": "ページ内の訳文はWebサイトから読み取られる可能性があります。機密情報を含む文章にはサイドパネルを使用してください。",
   "Reset settings and delete all glossaries? The downloaded model and website permissions will be kept.": "設定を初期化し、すべての用語集を削除しますか？モデルとWebサイトの許可は残ります。",
-  "Side-panel-only display is enabled. Open the side panel to translate.": "サイドパネルのみに表示する設定です。サイドパネルを開いて翻訳してください。"
+  "Side-panel-only display is enabled. Open the side panel to translate.": "サイドパネルのみに表示する設定です。サイドパネルを開いて翻訳してください。",
+  "Translate text as you browse": "Webページの文章を選択して翻訳",
+  "Allow website access to use selection translation without opening Glosside on each page.": "Webサイトへのアクセスを許可すると、ページごとにGlossideを開かずに選択翻訳を使えます。",
+  "On websites you have not allowed, open Glosside from the toolbar before selecting text.": "未許可のサイトでは、文章を選択する前にツールバーからGlossideを開く必要があります。",
+  "Prefer individual sites? Open Glosside from the toolbar on a page, then choose Always allow. Chrome internal pages and the Chrome Web Store are not supported.": "サイトごとに許可する場合は、そのページでツールバーのGlossideを開き「常に許可」を選んでください。Chromeの内部ページやChrome ウェブストアでは使えません。"
 }

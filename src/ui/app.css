@@ -368,3 +368,34 @@ details summary {
 [hidden] {
   display: none !important;
 }
+
+/* Shared first-use guidance in Settings and the action popup. */
+.access-onboarding,
+.settings-page section.access-onboarding {
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--soft);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.access-onboarding h2,
+.settings-page .access-onboarding h2 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+.access-onboarding p + p {
+  margin-top: 8px;
+}
+.access-onboarding .primary {
+  width: 100%;
+  margin: 14px 0 8px;
+}
+.access-onboarding.access-enabled h2 {
+  display: none;
+}
+#access-message {
+  margin-top: 10px;
+}

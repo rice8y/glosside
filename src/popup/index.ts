@@ -8,6 +8,8 @@ import { localizePage, t, backendLabel } from '../ui/locale';
 import { errorCode } from '../shared/errors';
 import { deviceKey, runtimeConfig, type DeviceProfile } from '../inference/device-profile';
 
+import { mountSiteAccess } from '../ui/site-access';
+
 import { byId as $ } from '../ui/dom';
 
 localizePage();
@@ -217,8 +219,9 @@ $('cancel-optimize').onclick = () =>
   guard(async () => {
     await ui('cancel-optimize');
   });
-guard(async () => {
-  populate((await ui('settings')).settings);
+const siteAccess = mountSiteAccess((e) => showError(explain(errorCode(e))));
+guard(() => siteAccess.refresh());
+async function refreshTab() {
   tab = await ui('popup-context');
   $('site').hidden = !tab.supported;
   $('site-name').textContent = tab.origin ? new URL(tab.origin).hostname : '';
@@ -231,8 +234,20 @@ guard(async () => {
     : '';
   $('allow-site').hidden = !tab.supported || !!tab.persistent;
   updateActions();
+}
+guard(async () => {
+  populate((await ui('settings')).settings);
+  await refreshTab();
 });
-addEventListener('pagehide', () => client.close());
+const permissionChanged = () => guard(refreshTab);
+chrome.permissions.onAdded.addListener(permissionChanged);
+chrome.permissions.onRemoved.addListener(permissionChanged);
+addEventListener('pagehide', () => {
+  client.close();
+  siteAccess.destroy();
+  chrome.permissions.onAdded.removeListener(permissionChanged);
+  chrome.permissions.onRemoved.removeListener(permissionChanged);
+});
 const profileChanges = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
   if (area !== 'local' || !changes.deviceProfiles) return;
   profiles = (changes.deviceProfiles.newValue ?? {}) as typeof profiles;

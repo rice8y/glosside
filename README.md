@@ -34,7 +34,8 @@ The installer detects the platform, verifies the ZIP's SHA-256 checksum, and ext
 
 1. Open `chrome://extensions` and enable **Developer mode**.
 2. Choose **Load unpacked** and select the directory printed by the installer.
-3. Open Glosside's settings, review the model license, and download the model (about 573 MB).
+3. In the settings page that opens, choose **Use on all websites** and approve Chrome's permission prompt to enable selection translation across websites.
+4. Review the model license and download the model (about 573 MB).
 
 To update, run the installer again, click **Reload** on Glosside in `chrome://extensions`, and reload your open pages. Keep the installation directory in place while using the extension.
 
@@ -55,7 +56,7 @@ Load `dist/` from `chrome://extensions` using **Load unpacked**, then download t
 
 ## Usage
 
-Click the extension icon to activate the current page, select text, and click the translation button. Use **Translate this page** for whole-page translation, or the side panel for manual input. Whole-page translation is unavailable in panel-only mode.
+After enabling **Use on all websites** and downloading the model, select text on a supported page and click the translation icon. To allow sites individually instead, open Glosside from the toolbar on a page and choose **Always allow**. Opening Glosside also activates the current tab temporarily. Use **Translate this page** for whole-page translation, or the side panel for manual input. Whole-page translation is unavailable in panel-only mode.
 
 Page translation replaces the displayed text. Hover over a translated passage to see its original, or choose **Restore original** to restore the page.
 

@@ -5,7 +5,7 @@ import { MODEL, MODEL_ORIGINS } from '../inference/catalog';
 import { settingsModelLabel, explainSettingsError } from './messages';
 import { errorCode } from '../shared/errors';
 import { status, download, byId as $ } from '../ui/dom';
-import { mountSiteAccess } from './site-access';
+import { mountSiteAccess } from '../ui/site-access';
 localizePage();
 const client = new Client();
 let current: Settings = { ...defaults },
