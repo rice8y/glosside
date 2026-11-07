@@ -19,15 +19,19 @@ export async function translate(
   let text = '',
     complete = true,
     last = 0;
-  // Longer decode contexts cost more on CPU; keep its measured 600-character
-  // ceiling while both backends honor the complete prompt/output byte budget.
-  const chunks = translationPlan(r, runtime.backend === 'GPU' ? Infinity : 600);
+  // Preserve paragraph context on both validated SIMD paths while reserving
+  // the full output budget and enforcing the conservative UTF-8 input bound.
+  const chunks = translationPlan(r);
   const planned = performance.now();
   let firstToken: number | undefined;
+  let prefillMs = 0,
+    decodeMs = 0,
+    hasEngineTimings = true;
   for (const [index, chunk] of chunks.entries()) {
     signal.throwIfAborted();
     let part = '',
       finish: string | null = null;
+    let engineTimings: { prompt_ms: number; predicted_ms: number } | undefined;
     const stream = await runtime.model.createCompletion({
       prompt: runtime.prompt(chunk.prompt),
       temperature: 0,
@@ -39,6 +43,7 @@ export async function translate(
     });
     for await (const item of stream) {
       signal.throwIfAborted();
+      if (item.timings) engineTimings = item.timings;
       const choice = item.choices[0];
       if (!choice) continue;
       if (choice.text) firstToken ??= performance.now();
@@ -49,6 +54,15 @@ export async function translate(
         last = performance.now();
       }
     }
+    if (
+      engineTimings &&
+      [engineTimings.prompt_ms, engineTimings.predicted_ms].every(
+        (ms) => Number.isFinite(ms) && ms >= 0,
+      )
+    ) {
+      prefillMs += engineTimings.prompt_ms;
+      decodeMs += engineTimings.predicted_ms;
+    } else hasEngineTimings = false;
     text += part.trimEnd();
     if (finish !== 'stop') {
       complete = false;
@@ -68,6 +82,7 @@ export async function translate(
       planMs: planned - prepared,
       ...(firstToken === undefined ? {} : { firstTokenMs: firstToken - planned }),
       generationMs: ended - planned,
+      ...(hasEngineTimings ? { prefillMs, decodeMs } : {}),
       totalMs: ended - started,
     },
     chunks: chunks.length,

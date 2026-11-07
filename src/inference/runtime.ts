@@ -1,6 +1,7 @@
 import { Wllama } from '@wllama/wllama';
 import { modelFile } from './model-store';
 import { AppError } from '../shared/errors';
+import { supportsRelaxedSIMD } from './wasm-features';
 import {
   defaultConfig,
   deviceKey,
@@ -16,6 +17,7 @@ export class ModelRuntime {
   private offloadedLayers = 0;
   private requestedCpu?: boolean;
   private loadedConfig = '';
+  private usePlainWasm = false;
   backend = '';
   profile?: DeviceProfile;
   constructor(private onState: (state: ModelState) => void) {}
@@ -59,8 +61,12 @@ export class ModelRuntime {
     const file = await modelFile();
     this.state('LOADING');
     const threads = config.threads;
+    const relaxed = !this.usePlainWasm && supportsRelaxedSIMD();
     this.engine = new Wllama(
-      { default: new URL('../vendor/wllama/wllama.wasm', location.href).href },
+      {
+        default: new URL(`../vendor/wllama/${relaxed ? 'relaxed/' : ''}wllama.wasm`, location.href)
+          .href,
+      },
       {
         suppressNativeLog: false,
         logger: { log: this.observeBackend, debug: this.observeBackend, warn() {}, error() {} },
@@ -95,6 +101,12 @@ export class ModelRuntime {
       this.state('READY');
     } catch (e) {
       await this.unload();
+      if (relaxed) {
+        this.usePlainWasm = true;
+        this.state('RECOVERING');
+        await this.load(cpu, config);
+        return;
+      }
       if (!cpu) {
         this.state('RECOVERING');
         await this.load(true, config);

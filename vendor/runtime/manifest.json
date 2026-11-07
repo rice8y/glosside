@@ -9,10 +9,23 @@
   "patchSha256": "862088fb3f634b862b000288fd0d22c2b8f71a9bc3d1f3559ae5268fc4848d1d",
   "emscripten": "6.0.13",
   "dawn": "v20260317.182325",
-  "abi": "wllama-3.8.1-plamo3-static-v2",
+  "abi": "wllama-3.8.1-plamo3-simd-v3",
   "files": {
     "wllama.js": "db1a385d292420bd5b15b70716bd0c0234148522261a1b3938655d22295df0e9",
-    "wllama.wasm": "9a86ea87353be77385af9d748ee3f29617f74e25257a4e02b340035adb85f31e",
-    "source-map.ts": "f317f40c32d1f5094a759e057b0425ff70a03ac2be46a0178e6ae911ea30641a"
+    "wllama.wasm": "5bf58267dff85a8f0e82ac0a800e4d6ca9f078cee51059e4ab624973049d369f",
+    "source-map.ts": "8caff1deb9d9a59b1c9a0f6e6d02359d8ac6791379a19ab04527d558e77da9c6",
+    "wllama-relaxed.wasm": "8d6c9d48efc7870efdaabd4cf915cdd74ada8bc911f835199e0c3bfc2f78f6cf"
+  },
+  "optimizations": {
+    "systemProcessor": "wasm",
+    "standardSIMD": true,
+    "relaxedSIMD": "feature-detected integer-dot kernels",
+    "relaxedPatchSha256": "ae47f43b8e4161deee1d033bfb65e8a9adc55d31b80a02735d6b27c1548b1aaf",
+    "portableDotPatchSha256": "0c78ba0fe2ccce8ca4b79249929164d515893dcc3b78b18d2bb9ad097ba7da20",
+    "relaxedPatchSource": "https://github.com/ggml-org/llama.cpp/pull/19590#issuecomment-6536684785",
+    "archives": {
+      "llama": "c76f86403bca39af3bbbd21485309714d7610ece2d81324f828cc68c920a851d",
+      "dawn": "8dcae86c630d76b6794b271c6572becba36f4237d132bee121a56638c3d76575"
+    }
   }
 }

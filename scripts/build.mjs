@@ -39,20 +39,25 @@ const emscripten = rawEmscripten.replace(
 const glue = await read(path.join(wroot, 'workers-code/llama-cpp.js'));
 const cpuDisable =
   'try{Object.defineProperty(WorkerNavigator.prototype,"gpu",{get:()=>({requestAdapter:async()=>null})});}catch(e){}\n';
-for (const cpu of [false, true]) {
-  const code = (cpu ? cpuDisable : '') + stub + emscripten;
-  await put(`${out}/vendor/wllama/emscripten${cpu ? '-cpu' : ''}.js`, code);
-  const options = `const params=new URL(location.href).searchParams;const RUN_OPTIONS={pathConfig:{'wllama.wasm':new URL('./wllama.wasm',location.href).href},nbThread:Number(params.get('threads')||0),compat:false};`;
-  await put(
-    `${out}/vendor/wllama/llama${cpu ? '-cpu' : ''}.js`,
-    `${options}\nfunction wModuleInit(){${code.replace('var Module', 'var ___Module')};return Module;}\n${glue}`,
+for (const variant of ['', '/relaxed']) {
+  for (const cpu of [false, true]) {
+    const code = (cpu ? cpuDisable : '') + stub + emscripten;
+    await put(`${out}/vendor/wllama${variant}/emscripten${cpu ? '-cpu' : ''}.js`, code);
+    const options = `const params=new URL(location.href).searchParams;const RUN_OPTIONS={pathConfig:{'wllama.wasm':new URL('./wllama.wasm',location.href).href},nbThread:Number(params.get('threads')||0),compat:false};`;
+    await put(
+      `${out}/vendor/wllama${variant}/llama${cpu ? '-cpu' : ''}.js`,
+      `${options}\nfunction wModuleInit(){${code.replace('var Module', 'var ___Module')};return Module;}\n${glue}`,
+    );
+  }
+  await cp(
+    `vendor/runtime/wllama${variant ? '-relaxed' : ''}.wasm`,
+    `${out}/vendor/wllama${variant}/wllama.wasm`,
   );
 }
 await put(
   `${out}/vendor/wllama/opfs.js`,
   await read(path.join(wroot, 'workers-code/opfs-utils.js')),
 );
-await cp('vendor/runtime/wllama.wasm', `${out}/vendor/wllama/wllama.wasm`);
 const staticRuntime = {
   name: 'static-wllama-workers',
   setup(b) {

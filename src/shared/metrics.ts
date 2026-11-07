@@ -9,6 +9,8 @@ export const metricNames = [
   'planMs',
   'firstTokenMs',
   'generationMs',
+  'prefillMs',
+  'decodeMs',
   'totalMs',
 ] as const;
 export type MetricName = (typeof metricNames)[number];

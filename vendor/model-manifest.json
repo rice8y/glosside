@@ -4,7 +4,7 @@
   "filename": "plamo-3-translate-0.8b-Q4_K_M.gguf",
   "bytes": 573123200,
   "sha256": "923b2f28a9856de1b8b3b610a7e59ded0b14d007466fd5dd526e6a9ecaadafdd",
-  "runtimeABI": "wllama-3.8.1-plamo3-static-v2",
+  "runtimeABI": "wllama-3.8.1-plamo3-simd-v3",
   "licenseRevision": "cc8e88169807d5a272e8ff06db12eb0129b67f81",
   "tokenizerRevision": "cc8e88169807d5a272e8ff06db12eb0129b67f81",
   "legacy": [
