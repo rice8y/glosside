@@ -3,7 +3,8 @@
   "name": "Glosside",
   "version": "0.1.0",
   "minimum_chrome_version": "151",
-  "description": "WebページやPDFの文章を、PLaMo 3 Translateで端末内翻訳します。",
+  "description": "__MSG_extensionDescription__",
+  "default_locale": "en",
   "permissions": [
     "activeTab",
     "scripting",

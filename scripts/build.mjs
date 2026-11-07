@@ -145,6 +145,7 @@ async function copyStatic(dir) {
   }
 }
 await copyStatic('src');
+await cp('src/_locales', `${out}/_locales`, { recursive: true });
 const manifest = JSON.parse(await read('src/manifest.json'));
 for (const [size, icon] of Object.entries(manifest.icons))
   manifest.icons[size] = `icons/${versionedIcon(path.basename(icon))}`;

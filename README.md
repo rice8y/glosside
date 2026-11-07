@@ -2,6 +2,8 @@
 
 Translate selected text, web pages, and PDF selections locally in Chrome with PLaMo 3 Translate 0.8B.
 
+Glosside is an independent, unofficial project and is not affiliated with or endorsed by Preferred Networks, Inc. (PFN).
+
 ## Installation
 
 Requires desktop Chrome 151 or later.
