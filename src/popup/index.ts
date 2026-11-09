@@ -161,6 +161,11 @@ for (const id of ['options', 'setup'])
       await chrome.runtime.openOptionsPage();
       window.close();
     });
+$('translator').onclick = () =>
+  guard(async () => {
+    await chrome.tabs.create({ url: chrome.runtime.getURL('translate/index.html') });
+    window.close();
+  });
 $('panel').onclick = () => {
   if (tab.tabId === undefined) return;
   // Call directly in the click stack; opening the panel requires a user gesture.

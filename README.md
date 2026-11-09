@@ -58,7 +58,7 @@ Load `dist/` from `chrome://extensions` using **Load unpacked**, then download t
 
 - **Selected text:** Select text on a web page or PDF and click the translation icon.
 - **Whole pages:** Choose **Translate this page**. Hover over translated text to see the original, or choose **Restore original** to undo.
-- **Manual input:** Open the side panel and enter text.
+- **Manual input:** Choose **Text translation** in the extension popup for a dedicated tab with side-by-side source and translation, language swapping, glossary selection, copy, and text export. Press Ctrl/⌘ + Enter to translate. The side panel also accepts text. Text is not saved as history; closing or reloading the translator clears it. Language and glossary choices in this tab apply to this tab only.
 
 PDFs use Chrome's standard viewer. Matched equations are preserved; unresolved parts remain as source text. Whole-document PDF translation and OCR are not supported.
 

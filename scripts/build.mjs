@@ -101,6 +101,7 @@ const entries = Object.fromEntries(
     'offscreen/host',
     'workers/inference',
     'sidepanel/index',
+    'translate/index',
     'options/index',
     'popup/index',
     'glossary/index',

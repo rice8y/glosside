@@ -7,6 +7,7 @@ export const pendingKey = () =>
 
 const trustedPaths = [
   'sidepanel/index.html',
+  'translate/index.html',
   'options/index.html',
   'popup/index.html',
   'glossary/index.html',

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title data-i18n="Text translation - Glosside">Text translation - Glosside</title>
+    <link rel="icon" type="image/png" href="../icons/48.png" />
+    <link rel="stylesheet" href="../ui/app.css" />
+    <link rel="stylesheet" href="translate.css" />
+    <script type="module" src="index.js"></script>
+  </head>
+  <body>
+    <header class="workspace-header">
+      <div class="identity">
+        <div class="brand">
+          <img src="../icons/glosside.svg" width="30" height="30" alt="" /><strong>Glosside</strong>
+        </div>
+        <h1 data-i18n="Text translation">Text translation</h1>
+      </div>
+      <nav aria-label="Tools" data-i18n-aria-label="Tools">
+        <a href="../glossary/index.html" target="_blank" rel="noopener" data-i18n="Edit glossaries"
+          >Edit glossaries</a
+        >
+        <a href="../options/index.html" target="_blank" rel="noopener" data-i18n="Settings"
+          >Settings</a
+        >
+      </nav>
+    </header>
+    <main>
+      <div class="workspace">
+        <section class="pane source-pane" aria-labelledby="source-label">
+          <div class="pane-toolbar">
+            <label class="language" for="source-lang"
+              ><span id="source-label" data-i18n="Source">Source</span
+              ><select id="source-lang" disabled></select
+            ></label>
+            <label class="glossary" for="glossary"
+              ><span data-i18n="Glossary">Glossary</span
+              ><select id="glossary" disabled></select
+            ></label>
+            <button id="translate" class="primary" disabled data-i18n="Translate">Translate</button>
+            <button id="cancel" hidden data-i18n="Stop translation">Stop translation</button>
+          </div>
+          <textarea
+            id="source"
+            dir="auto"
+            aria-labelledby="source-label"
+            aria-describedby="count"
+            placeholder="Enter text to translate"
+            data-i18n-placeholder="Enter text to translate"
+            spellcheck="false"
+          ></textarea>
+          <div class="pane-footer">
+            <span id="count"></span
+            ><button id="clear" class="quiet" disabled data-i18n="Clear text">Clear text</button>
+          </div>
+        </section>
+        <button
+          id="swap"
+          class="swap"
+          disabled
+          aria-label="Swap languages"
+          data-i18n-aria-label="Swap languages"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M4 8h16m-4-4 4 4-4 4M20 16H4m4-4-4 4 4 4" />
+          </svg>
+        </button>
+        <section class="pane target-pane" aria-labelledby="target-label">
+          <div class="pane-toolbar">
+            <label class="language" for="target-lang"
+              ><span data-i18n="Target">Target</span
+              ><select id="target-lang" disabled></select
+            ></label>
+            <label id="style-field" class="writing-style" for="japanese-form"
+              ><span data-i18n="Japanese writing style">Japanese writing style</span
+              ><select id="japanese-form" disabled>
+                <option value="polite" data-i18n="Polite">Polite</option>
+                <option value="plain" data-i18n="Plain">Plain</option>
+              </select></label
+            >
+          </div>
+          <h2 id="target-label" class="sr-only" data-i18n="Translated text">Translated text</h2>
+          <div class="result-area">
+            <p id="placeholder" data-i18n="Your translation will appear here">
+              Your translation will appear here
+            </p>
+            <div
+              id="result"
+              tabindex="0"
+              role="region"
+              aria-labelledby="target-label"
+              dir="auto"
+            ></div>
+          </div>
+          <div class="pane-footer">
+            <span id="result-count"></span>
+            <div class="result-actions">
+              <button id="export" class="quiet" disabled data-i18n="Save text file">
+                Save text file</button
+              ><button id="copy" disabled data-i18n="Copy translation">Copy translation</button>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="feedback">
+        <p id="status" role="status" aria-live="polite"></p>
+        <span class="shortcut" data-i18n="Ctrl / ⌘ + Enter to translate"
+          >Ctrl / ⌘ + Enter to translate</span
+        >
+      </div>
+      <div id="model-notice" role="status" hidden>
+        <span id="model-message"></span
+        ><a href="../options/index.html" target="_blank" rel="noopener" data-i18n="Open settings"
+          >Open settings</a
+        >
+      </div>
+    </main>
+    <footer>
+      <span data-i18n="Translation stays on this device.">Translation stays on this device.</span
+      ><span>Built with PLaMo.</span>
+    </footer>
+  </body>
+</html>
