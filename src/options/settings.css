@@ -92,7 +92,8 @@
   justify-self: end;
 }
 .model-state {
-  text-align: right;
+  margin-top: 8px;
+  text-align: left;
   color: var(--muted);
   font-size: 12px;
 }
