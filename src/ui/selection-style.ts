@@ -115,6 +115,12 @@ section::before {
   margin-inline: auto;
   filter: invert(1) brightness(.96);
 }
+.html-math { display: inline-block; vertical-align: baseline; white-space: nowrap; overflow-wrap: normal; }
+.html-math math { font-size: 1em; color: inherit; }
+.html-math img { display: inline-block; max-width: none; height: auto; vertical-align: middle; background: white; border-radius: 2px; padding: 1px; }
+.html-math svg { max-width: none; }
+.html-math-block { display: block; margin: 10px 0; overflow-x: auto; padding: 4px 0; text-align: center; }
+.html-math-block .html-math { max-width: none; }
 .output-inline { white-space: normal; }
 .inline-original { white-space: pre-wrap; }
 .inline-equation { display: inline-block; max-width: 100%; margin: 0 .06em; object-fit: contain; }

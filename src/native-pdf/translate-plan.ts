@@ -1,3 +1,4 @@
+import { protectedTokens, protectedPositions } from '../shared/protected-tokens';
 import { makeRequest } from '../shared/protocol';
 import { explain, errorCode } from '../shared/errors';
 import type { Client } from '../shared/client';
@@ -38,23 +39,16 @@ export async function translatePdfPlan(
       continue;
     }
     const equations: Exclude<PdfInlineRun, { kind: 'text' }>[] = [];
-    // Pick a namespace absent from the source; no selected text can impersonate it.
-    let prefix = 'ZXQ';
-    while (part.source.includes(prefix)) prefix += 'Z';
-    const tokens: string[] = [];
+    const count = part.kind === 'paragraph' ? part.runs.filter((r) => r.kind !== 'text').length : 0;
+    const { prefix, tokens } = protectedTokens(part.source, count);
     let input =
       part.kind === 'paragraph'
         ? preparePdfText(
             part.runs
               .map((r) => {
                 if (r.kind === 'text') return r.text;
+                const token = tokens[equations.length];
                 equations.push(r);
-                const index = tokens.length;
-                const label =
-                  (index < 26 ? '' : String.fromCharCode(64 + Math.floor(index / 26))) +
-                  String.fromCharCode(65 + (index % 26));
-                const token = prefix + label + prefix;
-                tokens.push(token);
                 return token;
               })
               .join(''),
@@ -144,18 +138,13 @@ export function restoreInline(
   tokens: string[],
   equations: Exclude<PdfInlineRun, { kind: 'text' }>[],
 ): PdfInlineRun[] | undefined {
-  if (tokens.some((t) => text.split(t).length !== 2)) return;
-  let remainder = text;
-  for (const token of tokens) remainder = remainder.replace(token, '');
-  if (remainder.includes(prefix)) return;
-  const positions = tokens
-    .map((t, i) => ({ start: text.indexOf(t), token: t, equation: equations[i] }))
-    .sort((a, b) => a.start - b.start);
+  const positions = protectedPositions(text, prefix, tokens);
+  if (!positions) return;
   const runs: PdfInlineRun[] = [];
   let cursor = 0;
   for (const p of positions) {
     runs.push({ kind: 'text', text: text.slice(cursor, p.start) });
-    runs.push(p.equation);
+    runs.push(equations[p.index]);
     cursor = p.start + p.token.length;
   }
   runs.push({ kind: 'text', text: text.slice(cursor) });

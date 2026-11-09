@@ -146,6 +146,21 @@ export class TranslationPopup {
     if (e.type !== 'complete' && e.warnings?.length)
       this.state.textContent += '\n' + e.warnings.join(' ');
   }
+  // Only locally constructed, inert math views enter this path. Translation
+  // messages still contain plain text; they can never supply arbitrary HTML.
+  updateHtml(event: TranslationEvent, content: DocumentFragment) {
+    this.update(event);
+    if (this.disposed) return;
+    const fallback = !!content.querySelector('[data-math-fallback]');
+    this.output.replaceChildren(content);
+    this.copyButton.title = '訳文をコピー（数式は原文の文字列）';
+    const warn = () => {
+      this.state.classList.remove('quiet');
+      this.state.textContent = '一部の数式は原文の文字列で表示しています。';
+    };
+    this.output.addEventListener('math-render-error', warn, { once: true });
+    if (fallback) warn();
+  }
   private renderParts(parts: PdfPart[]) {
     this.output.replaceChildren();
     for (const part of parts) {

@@ -28,6 +28,16 @@ Complex page scripts can still affect extraction or presentation.
 Canvas content, closed shadow roots, custom editors, and browser-restricted pages are outside general automatic extraction support.
 Input fields are excluded from automatic page translation; password fields are excluded from extraction.
 
+## Equations on web pages
+
+Selection and paragraph popups preserve MathML, MathJax (HTML or SVG), KaTeX, and images explicitly marked as equations. Inline formulas stay within the translated sentence; display equations remain separate and can scroll horizontally. A selection crossing part of a formula includes the complete formula. Visual output and accessibility MathML are treated as one equation.
+
+MathML is rendered natively when available. Otherwise, the popup uses an inert copy of the rendered SVG or HTML, or the original equation image. Scripts, event handlers, links, and external SVG references are not copied. Unsupported rendering falls back to the formula's source text or label. Copying a translation includes available TeX, a textual MathML representation, or image alternative text; formulas without textual metadata use an equation label. Images are preserved without OCR. Unmarked images, canvas equations, and arbitrary TeX in plain text are not detected as equations.
+
+Whole-page translation leaves the original equation elements in place. Ordinary paragraphs with suitable text nodes are translated as a sentence around the equations. Rich markup retains per-node translation with the mathematical paragraph as context. Results that would move formulas or require new text positions remain unchanged. Restoring the page preserves its original elements and respects updates made by the website.
+
+Formula markers must survive translation exactly once each. Missing, repeated, or unknown markers retain the original selection or passage. Selections containing more than 96 formulas retain the source. These features use the page DOM and apply to in-page controls, not plain text pasted into the side panel. Editing the surrounding source retains formulas when their textual representations remain unambiguous.
+
 ## PDF selections
 
 Glosside translates text selected in Chrome's standard PDF viewer.

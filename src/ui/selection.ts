@@ -9,7 +9,14 @@ import { selectionStyle } from './selection-style';
 import { brandIcon } from './brand';
 import { preparePdfText } from '../native-pdf/reflow';
 import { measure } from '../shared/metrics';
-import { paragraphText } from '../content/paragraph';
+import { paragraphText, paragraphRange } from '../content/paragraph';
+import {
+  htmlMathPlan,
+  editHtmlPlan,
+  translateHtmlPlan,
+  renderHtmlMath,
+  type HtmlPlan,
+} from '../content/math-plan';
 import { mayContainMath, originalPdf } from '../shared/pdf-equations';
 import { translatePdfPlan } from '../native-pdf/translate-plan';
 export interface SelectionOptions {
@@ -24,6 +31,7 @@ export class SelectionUI {
   private timer?: ReturnType<typeof setTimeout>;
   private result?: TranslationPopup;
   private range?: Range;
+  private htmlPlan?: HtmlPlan;
   private text = '';
   private selectedText = '';
   private translationOverride?: string;
@@ -31,7 +39,7 @@ export class SelectionUI {
   private placement?: 'above' | 'below';
   private mode: Mode = 'selection';
   private active?: string;
-  private pdfAbort?: AbortController;
+  private translationAbort?: AbortController;
   private pinned = false;
   private composing = false;
   private dragging = false;
@@ -105,7 +113,6 @@ export class SelectionUI {
     const edit = this.editable(selection.anchorNode);
     if (edit?.matches('input[type="password"]') || (!explicit && edit)) return;
     const text = selection.toString();
-    if (!text.trim()) return;
     const selectedRange = selection.getRangeAt(0);
     if (
       !explicit &&
@@ -118,8 +125,11 @@ export class SelectionUI {
     )
       return;
     if (this.pinned && !explicit) return;
+    const plan = !edit ? htmlMathPlan(selectedRange) : undefined;
+    if (!text.trim() && !plan) return;
     this.close();
-    this.text = text;
+    this.htmlPlan = plan;
+    this.text = plan?.source ?? text;
     this.selectedText = text;
     this.mode = 'selection';
     this.inputRect = undefined;
@@ -203,7 +213,7 @@ export class SelectionUI {
   private async translate() {
     const clicked = performance.now();
     const version = this.version;
-    this.pdfAbort?.abort();
+    this.translationAbort?.abort();
     const pdfSource = this.translationOverride ?? this.text;
     const protectMath = this.options.surface === 'native-selection';
     this.result?.dispose();
@@ -230,7 +240,9 @@ export class SelectionUI {
           if (this.active) this.client.pin(this.active, this.pinned);
           return this.pinned;
         },
-        ...(this.options.surface === 'html' && this.range && paragraphText(this.range) !== undefined
+        ...(this.options.surface === 'html' &&
+        this.range &&
+        paragraphRange(this.range) !== undefined
           ? { paragraph: () => this.paragraph() }
           : {}),
         retry: (source) => {
@@ -249,9 +261,35 @@ export class SelectionUI {
       this.position();
     };
     try {
+      const htmlPlan = this.htmlPlan && editHtmlPlan(this.htmlPlan, prepared.text);
+      if (this.options.surface === 'html' && htmlPlan) {
+        checkText(htmlPlan.source);
+        const controller = (this.translationAbort = new AbortController());
+        const { event, runs } = await translateHtmlPlan(
+          htmlPlan,
+          this.client,
+          {
+            sessionId: this.client.id,
+            documentEpoch: this.options.epoch(),
+            selectionVersion: version,
+            surface: 'html',
+            mode: this.mode,
+            pinned: this.pinned,
+          },
+          controller.signal,
+          (id) => {
+            this.active = id;
+          },
+        );
+        if (version !== this.version || controller.signal.aborted) return;
+        popup.updateHtml(event, renderHtmlMath(runs));
+        reveal();
+        measure('clickToResultMs', clicked);
+        return;
+      }
       if (protectMath) {
         checkText(pdfSource);
-        const controller = (this.pdfAbort = new AbortController());
+        const controller = (this.translationAbort = new AbortController());
         let plan;
         try {
           plan = await this.client.preparePdf(pdfSource, controller.signal);
@@ -314,7 +352,9 @@ export class SelectionUI {
   }
   private paragraph() {
     if (this.options.surface !== 'html' || !this.range) return;
-    const text = paragraphText(this.range);
+    const expanded = paragraphRange(this.range);
+    const plan = expanded && htmlMathPlan(expanded);
+    const text = plan?.source ?? paragraphText(this.range);
     if (text === undefined) {
       const state = this.shadow.querySelector('.state');
       if (state) {
@@ -327,6 +367,7 @@ export class SelectionUI {
     if (this.active) this.client.cancel(this.active);
     this.version++;
     this.mode = 'paragraph';
+    this.htmlPlan = plan;
     this.text = text;
     this.translationOverride = undefined;
     void this.translate();
@@ -387,8 +428,8 @@ export class SelectionUI {
 
   close() {
     clearTimeout(this.timer);
-    this.pdfAbort?.abort();
-    this.pdfAbort = undefined;
+    this.translationAbort?.abort();
+    this.translationAbort = undefined;
     this.result?.dispose();
     this.result = undefined;
     this.version++;
@@ -398,6 +439,7 @@ export class SelectionUI {
     this.host.hidden = true;
     this.text = '';
     this.selectedText = '';
+    this.htmlPlan = undefined;
     this.translationOverride = undefined;
   }
   destroy() {

@@ -1,18 +1,46 @@
+import { MATH_SELECTOR, mathSource } from './math-elements';
 export const EXCLUDED =
-  'script,style,noscript,code,pre,math,svg,canvas,textarea,input,select,[contenteditable]:not([contenteditable="false"]),[translate="no"],[hidden],[aria-hidden="true"],[data-local-translator]';
+  'script,style,noscript,code,pre,math,svg,canvas,textarea,input,select,[contenteditable]:not([contenteditable="false"]),[translate="no"],[hidden],[aria-hidden="true"],[data-local-translator],' +
+  MATH_SELECTOR;
 export function sourceText(
   element: Element,
   read: (node: Text) => string = (node) => node.data,
+  includeMath = false,
 ): string {
-  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
-    acceptNode(node) {
-      return node.parentElement?.closest(EXCLUDED)
-        ? NodeFilter.FILTER_REJECT
-        : NodeFilter.FILTER_ACCEPT;
+  const walker = document.createTreeWalker(
+    element,
+    NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+    {
+      acceptNode(node) {
+        if (node instanceof Element) {
+          if (node.parentElement?.closest(EXCLUDED)) return NodeFilter.FILTER_REJECT;
+          if (includeMath && node.matches(MATH_SELECTOR)) {
+            for (let current: Element | null = node; current; current = current.parentElement) {
+              const style = getComputedStyle(current);
+              if (
+                current.matches('[hidden],[aria-hidden="true"]') ||
+                style.display === 'none' ||
+                style.visibility === 'hidden'
+              )
+                return NodeFilter.FILTER_REJECT;
+              if (current === element) break;
+            }
+            return NodeFilter.FILTER_ACCEPT;
+          }
+          return node.matches(EXCLUDED) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_SKIP;
+        }
+        return node.parentElement?.closest(EXCLUDED)
+          ? NodeFilter.FILTER_REJECT
+          : NodeFilter.FILTER_ACCEPT;
+      },
     },
-  });
+  );
   let text = '';
-  while (walker.nextNode()) text += read(walker.currentNode as Text);
+  while (walker.nextNode())
+    text +=
+      walker.currentNode instanceof Element
+        ? mathSource(walker.currentNode)
+        : read(walker.currentNode as Text);
   return text;
 }
 
@@ -71,22 +99,26 @@ export function textContext(
   let text = cache.get(parent);
   if (text === undefined) {
     const container = parent;
-    text = sourceText(container, (textNode) => {
-      for (
-        let element = textNode.parentElement;
-        element && element !== container;
-        element = element.parentElement
-      ) {
-        const style = getComputedStyle(element);
-        if (
-          style.display === 'none' ||
-          style.visibility === 'hidden' ||
-          style.contentVisibility === 'hidden'
-        )
-          return '';
-      }
-      return read(textNode);
-    }).trim();
+    text = sourceText(
+      container,
+      (textNode) => {
+        for (
+          let element = textNode.parentElement;
+          element && element !== container;
+          element = element.parentElement
+        ) {
+          const style = getComputedStyle(element);
+          if (
+            style.display === 'none' ||
+            style.visibility === 'hidden' ||
+            style.contentVisibility === 'hidden'
+          )
+            return '';
+        }
+        return read(textNode);
+      },
+      true,
+    ).trim();
     cache.set(container, text);
   }
   // Context is optional; never trim the actual translation input to make it fit.

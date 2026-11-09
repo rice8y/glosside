@@ -1,6 +1,8 @@
 import { EXCLUDED, sourceText } from './blocks';
+import { mathRoot } from './math-elements';
 
 function isBlock(element: Element) {
+  if (mathRoot(element)) return false;
   if (element.matches('br,hr')) return true;
   const display = getComputedStyle(element).display;
   if (display)
@@ -12,7 +14,7 @@ function isBlock(element: Element) {
 
 // A paragraph can be an inline run inside a div, not necessarily a <p>.
 // Expand only within one run; never collect neighbouring headings or paragraphs.
-export function paragraphText(selection: Range): string | undefined {
+export function paragraphRange(selection: Range): Range | undefined {
   if (selection.collapsed || !selection.commonAncestorContainer.isConnected) return;
   let container =
     selection.commonAncestorContainer instanceof Element
@@ -31,10 +33,7 @@ export function paragraphText(selection: Range): string | undefined {
       selection.compareBoundaryPoints(Range.END_TO_END, range) > 0
     )
       return;
-    const fragment = document.createElement('div');
-    fragment.append(range.cloneContents());
-    const text = sourceText(fragment);
-    return text.trim() ? text : undefined;
+    return range;
   };
   for (const node of container.childNodes) {
     const boundary =
@@ -46,4 +45,13 @@ export function paragraphText(selection: Range): string | undefined {
     } else run.push(node);
   }
   return read();
+}
+
+export function paragraphText(selection: Range): string | undefined {
+  const range = paragraphRange(selection);
+  if (!range) return;
+  const fragment = document.createElement('div');
+  fragment.append(range.cloneContents());
+  const text = sourceText(fragment);
+  return text.trim() ? text : undefined;
 }

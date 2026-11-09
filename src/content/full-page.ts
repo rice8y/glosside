@@ -7,6 +7,8 @@ import { isExtensionNode } from '../ui/dom';
 import { t } from '../ui/locale';
 import { OriginalPopup } from '../ui/original-popup';
 import { PageProgress } from './page-progress';
+import { pageMath, pageMathCurrent, pageMathWrites, type PageMath } from './page-math';
+import { translateHtmlPlan } from './math-plan';
 
 interface Passage {
   node: Text;
@@ -16,6 +18,7 @@ interface Passage {
   state: 'queued' | 'running' | 'done' | 'error';
   error?: string;
   controller?: AbortController;
+  group?: { math: PageMath; members: Passage[] };
 }
 const LIMIT = 2000;
 
@@ -89,8 +92,11 @@ export class FullPage {
           continue;
         }
         // The page now owns this text. Never restore an older original over its update.
-        this.passages.get(node)?.controller?.abort();
-        this.passages.delete(node);
+        const passage = this.passages.get(node);
+        if (passage) {
+          passage.translated = undefined;
+          this.release(passage);
+        }
       } else if (record.type === 'childList') {
         const nodes = [...record.addedNodes, ...record.removedNodes];
         if (nodes.length && nodes.every(isExtensionNode)) continue;
@@ -112,6 +118,12 @@ export class FullPage {
   }
 
   private release(passage: Passage) {
+    if (passage.group) {
+      const members = passage.group.members;
+      for (const member of members) member.group = undefined;
+      for (const member of members) this.release(member);
+      return;
+    }
     passage.controller?.abort();
     if (passage.translated !== undefined && passage.node.data === passage.translated) {
       if (passage.node.isConnected) this.write(passage.node, passage.source);
@@ -140,7 +152,11 @@ export class FullPage {
       this.original?.hide();
     }
     for (const passage of this.passages.values()) {
-      if (!passage.node.isConnected || passage.node.data !== (passage.translated ?? passage.source))
+      if (
+        !passage.node.isConnected ||
+        passage.node.data !== (passage.translated ?? passage.source) ||
+        (passage.group && !pageMathCurrent(passage.group.math))
+      )
         this.release(passage);
     }
     const candidates = pageTextNodes(
@@ -149,11 +165,37 @@ export class FullPage {
       LIMIT + 1,
     );
     const accepted = new Set(candidates.slice(0, LIMIT));
+    // Existing groups include punctuation/whitespace nodes, which the ordinary
+    // text-node scanner intentionally ignores.
+    for (const passage of this.passages.values())
+      if (passage.group && passage.group.members.some((member) => accepted.has(member.node)))
+        for (const member of passage.group.members) accepted.add(member.node);
     for (const passage of this.passages.values())
       if (!accepted.has(passage.node)) this.release(passage);
     const contexts = new Map<Element, string>();
     for (const node of accepted) {
       if (this.passages.has(node)) continue;
+      const math = pageMath(node, this.readOriginal);
+      const nodes = math?.slots.flat();
+      if (
+        math &&
+        nodes?.length &&
+        nodes.length + this.passages.size <= LIMIT &&
+        nodes.every((text) => !this.passages.has(text))
+      ) {
+        const members: Passage[] = nodes.map((text) => ({
+          node: text,
+          source: text.data,
+          state: 'queued',
+        }));
+        const group = { math, members };
+        for (const member of members) {
+          member.group = group;
+          this.passages.set(member.node, member);
+          accepted.add(member.node);
+        }
+        continue;
+      }
       this.passages.set(node, {
         node,
         source: node.data,
@@ -195,7 +237,13 @@ export class FullPage {
       !passage.controller?.signal.aborted &&
       this.passages.get(passage.node) === passage &&
       passage.node.isConnected &&
-      passage.node.data === passage.source
+      passage.node.data === passage.source &&
+      (!passage.group ||
+        (pageMathCurrent(passage.group.math) &&
+          passage.group.members.every(
+            (member) =>
+              this.passages.get(member.node) === member && member.node.data === member.source,
+          )))
     );
   }
 
@@ -215,6 +263,36 @@ export class FullPage {
         passage.state = 'running';
         passage.controller = new AbortController();
         try {
+          if (passage.group) {
+            const group = passage.group;
+            for (const member of group.members) {
+              member.controller = passage.controller;
+              member.state = 'running';
+            }
+            const { event, runs } = await translateHtmlPlan(
+              group.math.plan,
+              this.client,
+              {
+                sessionId: this.client.id,
+                documentEpoch: this.epoch,
+                mode: 'page',
+                priority: visible(passage.node) ? 2 : 3,
+              },
+              passage.controller.signal,
+              () => {},
+            );
+            this.mutations(this.observer?.takeRecords() ?? []);
+            if (!this.current(passage)) continue;
+            const writes = event.type === 'complete' && pageMathWrites(group.math, runs);
+            if (!writes) throw new AppError('INVALID_TRANSLATION');
+            for (const member of group.members) {
+              member.translated = writes.get(member.node) ?? member.source;
+              this.write(member.node, member.translated);
+              member.state = 'done';
+            }
+            this.update();
+            continue;
+          }
           let translated = '';
           const parts = translationChunks(passage.source.trim(), 16000);
           for (const [index, part] of parts.entries()) {
@@ -250,8 +328,10 @@ export class FullPage {
           passage.state = 'done';
         } catch (error) {
           if (!this.current(passage)) continue;
-          passage.state = 'error';
-          passage.error = errorCode(error);
+          for (const member of passage.group?.members ?? [passage]) {
+            member.state = 'error';
+            member.error = errorCode(error);
+          }
         }
         this.update();
       }

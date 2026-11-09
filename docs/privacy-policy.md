@@ -19,6 +19,8 @@ It does not include advertising, analytics, or automatic telemetry.
 On permitted pages, Glosside accesses the displayed document and selection to provide translation controls and extract text.
 It uses tab identifiers, frame information, URLs, and website permission patterns to route requests and enforce site access.
 It does not maintain a browsing-history database.
+For web-page equations, Glosside reads the selected DOM and keeps a temporary, inert representation in the translation popup. Formula markers are processed locally. Preserving an equation image can cause the browser to load its existing image URL again, subject to normal browser caching; no selection, translation, or glossary text is added to that request. The popup omits referrer information for these image requests.
+
 PDFs remain displayed in Chrome's viewer. For selections in the native PDF popup, Glosside may retrieve the current PDF URL again using the site's granted access to locate and render display and inline equations locally. Inline equations are represented by temporary identifiers during local translation; the equation images and PDF bytes are not sent to a translation service.
 This temporary copy and its parsed text are held in memory during preparation, not written to extension file storage. Extracted equation images remain with the displayed result until it is closed or replaced.
 
