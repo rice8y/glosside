@@ -129,6 +129,10 @@ section::before {
 .html-table caption { text-align: left; margin-bottom: 8px; font-weight: 600; }
 .html-table .html-paragraph { white-space: pre-line; }
 .html-table .html-list { margin-block: 0; }
+.html-literal { font: .92em/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.html-literal-block { margin: 10px 0; max-width: 100%; overflow-x: auto; white-space: pre; }
+.html-literal-block .html-literal { white-space: pre; overflow-wrap: normal; }
+.html-literal-block:focus-visible { outline: 2px solid #c0a9ff; outline-offset: -2px; }
 .html-math { display: inline-block; vertical-align: baseline; white-space: nowrap; overflow-wrap: normal; }
 .html-math math { font-size: 1em; color: inherit; }
 .html-math img { display: inline-block; max-width: none; height: auto; vertical-align: middle; background: white; border-radius: 2px; padding: 1px; }

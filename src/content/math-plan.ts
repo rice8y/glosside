@@ -2,6 +2,7 @@ import { htmlStructure, structureText, structureRuns, type HtmlBlock } from './h
 import { EXCLUDED } from './blocks';
 import { mathRoot, mathSource, blockMath } from './math-elements';
 import { mathView } from './math-view';
+import { literalRoot, literalText } from './literal-text';
 import { protectedTokens, protectedPositions } from '../shared/protected-tokens';
 import { makeRequest } from '../shared/protocol';
 import type { Client } from '../shared/client';
@@ -10,6 +11,7 @@ import { explain, errorCode } from '../shared/errors';
 
 export type HtmlRun =
   | { kind: 'text'; text: string; node?: Text; element?: Element; boundary?: boolean }
+  | { kind: 'literal'; source: string; element: Element; block: boolean }
   | { kind: 'math'; source: string; element: Element; block: boolean; view?: HTMLElement };
 export interface HtmlPlan {
   runs: HtmlRun[];
@@ -35,6 +37,29 @@ export function htmlMathPlan(
   };
   const visit = (node: Node) => {
     if (!range.intersectsNode(node)) return;
+    const literal = literalRoot(node);
+    if (literal) {
+      const bounds = document.createRange();
+      bounds.selectNode(literal);
+      if (
+        range.compareBoundaryPoints(Range.END_TO_START, bounds) >= 0 ||
+        range.compareBoundaryPoints(Range.START_TO_END, bounds) <= 0
+      )
+        return;
+      const source = literalText(literal, range, read);
+      if (source) {
+        count++;
+        runs.push({
+          kind: 'literal',
+          source,
+          element: literal,
+          block:
+            literal.localName === 'pre' ||
+            /^(block|flex|grid)/.test(getComputedStyle(literal).display),
+        });
+      }
+      return;
+    }
     const math = mathRoot(node);
     if (math) {
       if (math.parentElement?.closest(EXCLUDED)) return;
@@ -118,8 +143,8 @@ export function htmlMathPlan(
 // still unambiguous. Modified formulas are treated as edited plain text.
 export function editHtmlPlan(plan: HtmlPlan, source: string): HtmlPlan | undefined {
   if (source === plan.source) return plan;
-  const maths = plan.runs.filter((r): r is Extract<HtmlRun, { kind: 'math' }> => r.kind === 'math');
-  const positions = maths.map((math) => ({ math, start: source.indexOf(math.source) }));
+  const protectedRuns = plan.runs.filter((r) => r.kind !== 'text');
+  const positions = protectedRuns.map((math) => ({ math, start: source.indexOf(math.source) }));
   if (
     positions.some(({ math, start }) => start < 0 || source.indexOf(math.source, start + 1) !== -1)
   )
@@ -144,15 +169,20 @@ export async function translateHtmlPlan(
   started: (id: string) => void,
 ): Promise<{ event: TranslationEvent; runs: HtmlRun[]; blocks?: HtmlBlock[] }> {
   signal.throwIfAborted();
-  const maths = plan.runs.filter((r): r is Extract<HtmlRun, { kind: 'math' }> => r.kind === 'math');
-  if (maths.length > 96)
+  const protectedRuns = plan.runs.filter((r) => r.kind !== 'text');
+  const hasLiterals = protectedRuns.some((r) => r.kind === 'literal');
+  if (protectedRuns.length > 96)
     return {
       event: {
         type: 'incomplete',
         requestId: 'html-math',
         sequence: 1,
         text: plan.source,
-        warnings: ['数式が多いため、原文を表示しています。翻訳する範囲を小さくしてください。'],
+        warnings: [
+          hasLiterals
+            ? '数式やコードが多いため、原文を表示しています。翻訳する範囲を小さくしてください。'
+            : '数式が多いため、原文を表示しています。翻訳する範囲を小さくしてください。',
+        ],
       },
       runs: plan.runs,
       blocks: plan.blocks,
@@ -209,7 +239,7 @@ export async function translateHtmlPlan(
       blocks,
     };
   }
-  const { prefix, tokens } = protectedTokens(plan.source, maths.length);
+  const { prefix, tokens } = protectedTokens(plan.source, protectedRuns.length);
   let index = 0;
   const input = plan.runs.map((r) => (r.kind === 'text' ? r.text : tokens[index++])).join('');
   if (!plan.runs.some((r) => r.kind === 'text' && r.text.trim()))
@@ -245,7 +275,11 @@ export async function translateHtmlPlan(
           ...result,
           type: 'incomplete',
           text: plan.source,
-          warnings: ['数式を安全に保持できなかったため、この範囲は原文を表示しています。'],
+          warnings: [
+            hasLiterals
+              ? 'コードを安全に保持できなかったため、この範囲は原文を表示しています。'
+              : '数式を安全に保持できなかったため、この範囲は原文を表示しています。',
+          ],
         },
         runs: plan.runs,
       };
@@ -254,7 +288,7 @@ export async function translateHtmlPlan(
     for (const position of positions) {
       runs.push(
         { kind: 'text', text: result.text.slice(cursor, position.start) },
-        maths[position.index],
+        protectedRuns[position.index],
       );
       cursor = position.start + position.token.length;
     }
@@ -344,6 +378,19 @@ export function renderHtmlMath(runs: HtmlRun[], blocks?: HtmlBlock[]): DocumentF
   for (const run of runs) {
     if (run.kind === 'text') {
       fragment.append(document.createTextNode(run.text));
+      continue;
+    }
+    if (run.kind === 'literal') {
+      const code = document.createElement('code');
+      code.className = 'html-literal';
+      code.textContent = run.source;
+      if (run.block) {
+        const pre = document.createElement('pre');
+        pre.className = 'html-literal-block';
+        pre.tabIndex = 0;
+        pre.append(code);
+        fragment.append(pre);
+      } else fragment.append(code);
       continue;
     }
     const view = run.view ?? document.createElement('span');

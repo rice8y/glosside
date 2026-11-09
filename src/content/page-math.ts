@@ -49,6 +49,7 @@ export function pageMath(node: Text, read: (node: Text) => string): PageMath | u
   if (!plan || plan.source.length > 12000) return;
   const slots: Text[][] = [[]];
   for (const run of plan.runs) {
+    if (run.kind === 'literal') return;
     if (run.kind === 'math') slots.push([]);
     else if (run.node) slots.at(-1)!.push(run.node);
     else if (run.text.trim()) return;

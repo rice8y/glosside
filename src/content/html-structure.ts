@@ -39,7 +39,7 @@ function ordinal(list: Element, item: Element) {
 export function htmlStructure(runs: HtmlRun[]): HtmlBlock[] | undefined {
   const blocks: HtmlBlock[] = [];
   const paths = runs.map((run) => {
-    const node = run.kind === 'math' ? run.element : (run.node ?? run.element);
+    const node = run.kind !== 'text' ? run.element : (run.node ?? run.element);
     const element = node instanceof Element ? node : node?.parentElement;
     const path: Element[] = [];
     for (let current = element; current; current = current.parentElement)
