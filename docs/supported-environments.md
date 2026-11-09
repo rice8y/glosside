@@ -28,6 +28,10 @@ Complex page scripts can still affect extraction or presentation.
 Canvas content, closed shadow roots, custom editors, and browser-restricted pages are outside general automatic extraction support.
 Input fields are excluded from automatic page translation; password fields are excluded from extraction.
 
+## Text translation in the toolbar popup
+
+The popup’s **Text translation** tab accepts direct input independently of the current website’s access permissions. It shares the dedicated translator’s language, glossary, writing-style, cancellation, copy, export, and sharing-notice controls. **Open in a tab** carries the input and available result into the larger workspace. Closing the popup cancels its active request; reopening restores its single session draft and completed result, not a background translation. **Clear text** removes the draft. The browser clears session drafts at session end; incognito uses a separate draft. No persistent translation history is created.
+
 ## Paragraphs and line breaks in selection popups
 
 Selection and paragraph popups retain visible HTML block boundaries, including paragraphs, headings, nested block containers, and CSS block layouts. Text is translated within each block, so equations cannot move to another paragraph. Adjacent selected paragraphs provide bounded context for sentences that lead into an equation, without changing their output positions. Explicit display equations and code blocks keep their positions between surrounding prose. An independent equation row built from inline formulas stays in its own paragraph without site-specific detection. Inline and `display: contents` wrappers do not split sentences.

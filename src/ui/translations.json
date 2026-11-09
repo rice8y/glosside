@@ -168,6 +168,7 @@
   "Clear text": "クリア",
   "Translated text": "訳文",
   "Your translation will appear here": "訳文がここに表示されます",
+  "Swap source and translation": "原文と訳文を入れ替え",
   "Swap languages": "原文と訳文の言語を入れ替え",
   "Choose a source language to swap": "入れ替えるには原文の言語を選んでください",
   "Save text file": "テキストを保存",
@@ -195,5 +196,7 @@
   "When sharing a translation with others, include the training-use notice. Plain copy and save do not include it.": "訳文を第三者に渡すときは、学習利用に関する通知を添えてください。通常のコピー・保存には、この通知は含まれません。",
   "For a book, paper, or similar long-form publication substantially using the translation, also credit PLaMo in an appropriate location.": "書籍・論文などの全部または実質的な部分に訳文を使う場合は、奥付・謝辞などにもPLaMoの利用を明記してください。",
   "License details": "ライセンスの詳細",
-  "Notice to include": "追加する通知"
+  "Notice to include": "追加する通知",
+  "Open in a tab": "タブで開く",
+  "Closing the popup stops translation. Your draft stays until the browser closes.": "閉じると翻訳は中止されます。入力と訳文はブラウザー終了まで保持します。"
 }

@@ -37,9 +37,19 @@
         role="tab"
         aria-controls="translation"
         aria-selected="true"
-        data-i18n="Translation"
+        data-i18n="Page translation"
       >
-        Translation
+        Page translation
+      </button>
+      <button
+        id="text-tab"
+        role="tab"
+        aria-controls="text-translation"
+        aria-selected="false"
+        tabindex="-1"
+        data-i18n="Text translation"
+      >
+        Text translation
       </button>
       <button
         id="preferences-tab"
@@ -170,6 +180,92 @@
             </option>
           </select></label
         >
+      </section>
+      <section id="text-translation" role="tabpanel" aria-labelledby="text-tab" hidden>
+        <div class="text-languages">
+          <label for="source-lang"
+            ><span id="source-label" data-i18n="Source">Source</span
+            ><select id="source-lang" disabled></select
+          ></label>
+          <button
+            id="swap"
+            disabled
+            aria-label="Swap source and translation"
+            data-i18n-aria-label="Swap source and translation"
+          >
+            ⇄
+          </button>
+          <label for="target-lang"
+            ><span data-i18n="Target">Target</span
+            ><select id="target-lang" disabled></select
+          ></label>
+        </div>
+        <textarea
+          id="source"
+          dir="auto"
+          aria-labelledby="source-label"
+          aria-describedby="count"
+          placeholder="Enter text to translate"
+          data-i18n-placeholder="Enter text to translate"
+          spellcheck="false"
+        ></textarea>
+        <div class="text-actions">
+          <span id="count" class="help"></span
+          ><button id="clear" class="text-button" disabled data-i18n="Clear text">Clear text</button
+          ><button id="translate" class="primary" disabled data-i18n="Translate">Translate</button
+          ><button id="cancel" hidden data-i18n="Stop translation">Stop translation</button>
+        </div>
+        <p id="status" class="help" role="status" aria-live="polite"></p>
+        <div class="text-result">
+          <span id="target-label" class="sr-only" data-i18n="Translated text">Translated text</span>
+          <div
+            id="result"
+            tabindex="0"
+            role="textbox"
+            aria-readonly="true"
+            aria-multiline="true"
+            aria-labelledby="target-label"
+            dir="auto"
+          ></div>
+        </div>
+        <div class="text-actions result-actions">
+          <span id="result-count" class="help"></span
+          ><button id="export" class="text-button" disabled data-i18n="Save text file">
+            Save text file</button
+          ><button id="copy" disabled data-i18n="Copy translation">Copy translation</button>
+        </div>
+        <div id="model-notice" class="help" role="status" hidden>
+          <span id="model-message"></span>
+          <a href="../options/index.html" target="_blank" rel="noopener" data-i18n="Open settings"
+            >Open settings</a
+          >
+        </div>
+        <div class="text-tools">
+          <button id="open-workspace" class="text-button" data-i18n="Open in a tab">
+            Open in a tab
+          </button>
+          <details class="text-preferences">
+            <summary data-i18n="Translation settings">Translation settings</summary>
+            <label class="setting" for="glossary"
+              ><span data-i18n="Glossary">Glossary</span
+              ><select id="glossary" disabled></select
+            ></label>
+            <label class="setting" id="style-field" for="japanese-form"
+              ><span data-i18n="Japanese writing style">Japanese writing style</span
+              ><select id="japanese-form" disabled>
+                <option value="polite" data-i18n="Polite">Polite</option>
+                <option value="plain" data-i18n="Plain">Plain</option>
+              </select></label
+            >
+            <div id="share-container"></div>
+            <p
+              class="help draft-notice"
+              data-i18n="Closing the popup stops translation. Your draft stays until the browser closes."
+            >
+              Closing the popup stops translation. Your draft stays until the browser closes.
+            </p>
+          </details>
+        </div>
       </section>
       <section id="preferences" role="tabpanel" aria-labelledby="preferences-tab" hidden="">
         <h1 data-i18n="Translation settings">Translation settings</h1>

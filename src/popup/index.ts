@@ -1,3 +1,4 @@
+import { mountTextTranslator, popupDraftKey } from '../translate/controller';
 import { Client, ui } from '../shared/client';
 import { defaults, type Settings, type ModelState } from '../shared/types';
 import {
@@ -75,6 +76,10 @@ for (const control of controls) {
   });
 }
 const tabs = [...document.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+let translator: ReturnType<typeof mountTextTranslator> | undefined;
+let tabChosen = false;
+const selectedTabKey =
+  'popupSelectedTab:' + (chrome.extension.inIncognitoContext ? 'private' : 'normal');
 function selectTab(index: number) {
   tabs.forEach((button, i) => {
     button.setAttribute('aria-selected', String(index === i));
@@ -82,7 +87,24 @@ function selectTab(index: number) {
     $(button.getAttribute('aria-controls')!).hidden = index !== i;
   });
   document.querySelector('main')!.scrollTop = 0;
+  if (tabs[index].id === 'text-tab') {
+    translator ??= mountTextTranslator($('text-translation'), {
+      read: popupDraftKey(),
+      write: popupDraftKey(),
+    });
+    translator.focus();
+  }
+  tabChosen = true;
+  void chrome.storage.session.set({ [selectedTabKey]: tabs[index].id }).catch(() => {});
 }
+void chrome.storage.session
+  .get(selectedTabKey)
+  .then((stored) => {
+    if (tabChosen) return;
+    const index = tabs.findIndex((tab) => tab.id === stored[selectedTabKey]);
+    if (index >= 0) selectTab(index);
+  })
+  .catch(() => {});
 tabs.forEach((button, index) => {
   button.onclick = () => selectTab(index);
   button.onkeydown = (event) => {
@@ -161,9 +183,11 @@ for (const id of ['options', 'setup'])
       await chrome.runtime.openOptionsPage();
       window.close();
     });
-$('translator').onclick = () =>
+$('translator').onclick = () => selectTab(tabs.findIndex((tab) => tab.id === 'text-tab'));
+$('open-workspace').onclick = () =>
   guard(async () => {
-    await chrome.tabs.create({ url: chrome.runtime.getURL('translate/index.html') });
+    await translator?.save();
+    await chrome.tabs.create({ url: chrome.runtime.getURL('translate/index.html?from=popup') });
     window.close();
   });
 $('panel').onclick = () => {

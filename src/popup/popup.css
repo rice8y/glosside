@@ -27,7 +27,7 @@ header {
 .tabs {
   display: flex;
   padding: 0 22px;
-  gap: 22px;
+  gap: 16px;
   border-bottom: 1px solid var(--line);
 }
 .tabs button {
@@ -239,4 +239,126 @@ footer {
 
 html:not([data-localized]) body {
   visibility: hidden;
+}
+
+.text-languages {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr);
+  gap: 8px;
+  align-items: end;
+}
+.text-languages label {
+  min-width: 0;
+}
+.text-languages #swap {
+  padding: 0;
+  min-height: 34px;
+  font-size: 18px;
+  background: transparent;
+  border-color: transparent;
+}
+#text-translation #source {
+  display: block;
+  height: 80px;
+  min-height: 70px;
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.text-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.text-actions .help {
+  margin: 0 auto 0 0;
+  font-size: 10px;
+}
+#text-translation #status {
+  margin: 6px 0;
+}
+.text-result {
+  position: relative;
+  margin-top: 10px;
+}
+#text-translation #result {
+  min-height: 80px;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 160px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.65;
+}
+#text-translation #result:focus-visible {
+  outline-offset: 2px;
+}
+.text-tools {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  margin-top: 12px;
+}
+.text-preferences {
+  grid-area: 1 / 1 / 2 / -1;
+  min-width: 0;
+  font-size: 11px;
+}
+.text-preferences .setting {
+  margin: 8px 0;
+}
+#text-translation #model-notice {
+  padding: 10px;
+  margin-top: 10px;
+  background: var(--soft);
+  border-radius: 8px;
+}
+#text-translation #status[data-error='true'],
+#text-translation #count[data-error='true'] {
+  color: #a23e30;
+}
+.draft-notice {
+  margin-top: 12px;
+  font-size: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  #text-translation #status[data-error='true'],
+  #text-translation #count[data-error='true'] {
+    color: #ffb0a6;
+  }
+}
+
+#text-translation #open-workspace {
+  grid-area: 1 / 2;
+  align-self: start;
+  z-index: 1;
+  margin: 0;
+}
+#text-translation .text-preferences > summary {
+  width: fit-content;
+  padding: 0;
+  line-height: 34px;
+}
+#text-translation #status:empty {
+  display: none;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+main:has(#text-translation:not([hidden])) {
+  padding-top: 14px;
+  padding-bottom: 14px;
 }
