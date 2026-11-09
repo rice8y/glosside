@@ -263,7 +263,17 @@ export function mathView(root: Element): HTMLElement {
       } else {
         if (root.namespaceURI === MML) throw new Error('Unsupported MathML');
         const copy = copyLayout(root);
-        if (!copy) throw new Error('Missing math layout');
+        if (
+          !copy ||
+          (!copy.textContent?.trim() &&
+            !(
+              copy instanceof Element &&
+              copy.querySelector(
+                'svg path,svg line,svg polyline,svg polygon,svg rect,svg circle,svg ellipse',
+              )
+            ))
+        )
+          throw new Error('Missing math layout');
         if (copy instanceof Element) copy.setAttribute('aria-hidden', 'true');
         host.append(copy);
       }
