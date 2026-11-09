@@ -169,6 +169,11 @@ export function analyzeInline(pages: PdfTextPage[], source: string) {
         const word = compact(value);
         if (!word || word.length > 60 || checked.has(word)) continue;
         checked.add(word);
+        // A punctuation glyph in a math font elsewhere in the document does
+        // not establish that the same punctuation in this selection is math.
+        // Keep punctuation within anchored formulas, but never use it alone
+        // to reject prose such as a sentence ending in a numeric citation.
+        if (/^[.,;:!?()[\]{}]+$/u.test(word)) continue;
         const escaped = [...word].map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*');
         const pattern = new RegExp('(?<![\\p{L}\\p{N}])' + escaped + '(?![\\p{L}\\p{N}])', 'gu');
         for (const found of source.matchAll(pattern)) {

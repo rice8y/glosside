@@ -224,7 +224,9 @@ function alignExactRange(
     });
   }
 
-  return ranges.length ? { ranges, prose: verified } : undefined;
+  // A uniquely matched prose-only selection is evidence too. Do not discard it
+  // and let unrelated math glyphs elsewhere in the PDF veto ordinary prose.
+  return ranges.length || verified.length ? { ranges, prose: verified } : undefined;
 }
 
 // Prose anchors locate the selection independently of the formula extraction.
