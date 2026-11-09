@@ -28,6 +28,10 @@ Complex page scripts can still affect extraction or presentation.
 Canvas content, closed shadow roots, custom editors, and browser-restricted pages are outside general automatic extraction support.
 Input fields are excluded from automatic page translation; password fields are excluded from extraction.
 
+## Lists in selection popups
+
+Unordered, ordered, and nested HTML lists retain their items in the translated popup, including when the list contains equations. Each paragraph or item is translated separately. Ordered lists retain their starting number, explicit item values, reversed order, and HTML numbering type. Selecting only part of a list keeps the selected items at their original numbers. Copying includes bullet or numeric markers. The popup exposes native list and list-item semantics to accessibility tools.
+
 ## Equations on web pages
 
 Selection and paragraph popups preserve MathML, MathJax (HTML or SVG), KaTeX, and images explicitly marked as equations. Inline formulas stay within the translated sentence; display equations remain separate and can scroll horizontally. A selection crossing part of a formula includes the complete formula. Visual output and accessibility MathML are treated as one equation. This includes accessibility copies stored beside the visible MathJax output. Native MathML exposes one structured equation in the accessibility tree; visual-only copies use one labelled math object.

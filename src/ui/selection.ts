@@ -265,7 +265,7 @@ export class SelectionUI {
       if (this.options.surface === 'html' && htmlPlan) {
         checkText(htmlPlan.source);
         const controller = (this.translationAbort = new AbortController());
-        const { event, runs } = await translateHtmlPlan(
+        const { event, runs, blocks } = await translateHtmlPlan(
           htmlPlan,
           this.client,
           {
@@ -282,7 +282,7 @@ export class SelectionUI {
           },
         );
         if (version !== this.version || controller.signal.aborted) return;
-        popup.updateHtml(event, renderHtmlMath(runs));
+        popup.updateHtml(event, renderHtmlMath(runs, blocks));
         reveal();
         measure('clickToResultMs', clicked);
         return;

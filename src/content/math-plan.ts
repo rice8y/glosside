@@ -1,3 +1,4 @@
+import { htmlStructure, structureText, structureRuns, type HtmlBlock } from './html-structure';
 import { EXCLUDED } from './blocks';
 import { mathRoot, mathSource, blockMath } from './math-elements';
 import { mathView } from './math-view';
@@ -8,11 +9,12 @@ import type { Request, TranslationEvent } from '../shared/types';
 import { explain, errorCode } from '../shared/errors';
 
 export type HtmlRun =
-  | { kind: 'text'; text: string; node?: Text }
+  | { kind: 'text'; text: string; node?: Text; element?: Element; boundary?: boolean }
   | { kind: 'math'; source: string; element: Element; block: boolean; view?: HTMLElement };
 export interface HtmlPlan {
   runs: HtmlRun[];
   source: string;
+  blocks?: HtmlBlock[];
 }
 export const htmlPlainText = (runs: HtmlRun[]) =>
   runs.map((r) => (r.kind === 'text' ? r.text : r.source)).join('');
@@ -73,24 +75,27 @@ export function htmlMathPlan(
       const style = getComputedStyle(node);
       if (style.display === 'none' || style.visibility === 'hidden') return;
       if (node.localName === 'br') {
-        append('\n');
+        runs.push({ kind: 'text', text: '\n', element: node });
         return;
       }
       const block = /^(block|list-item|table-row|flex|grid)/.test(style.display);
-      if (block && runs.length && !htmlPlainText(runs.slice(-1)).endsWith('\n')) append('\n');
+      if (block && runs.length && !htmlPlainText(runs.slice(-1)).endsWith('\n'))
+        runs.push({ kind: 'text', text: '\n', boundary: true });
       for (const child of node.childNodes) visit(child);
-      if (block && runs.length && !htmlPlainText(runs.slice(-1)).endsWith('\n')) append('\n');
+      if (block && runs.length && !htmlPlainText(runs.slice(-1)).endsWith('\n'))
+        runs.push({ kind: 'text', text: '\n', boundary: true });
     }
   };
   visit(mathRoot(range.commonAncestorContainer) ?? range.commonAncestorContainer);
-  if (!count) return;
   while (runs[0]?.kind === 'text' && !runs[0].node && !runs[0].text.trim()) runs.shift();
   while (runs.at(-1)?.kind === 'text') {
     const last = runs.at(-1) as Extract<HtmlRun, { kind: 'text' }>;
     if (last.node || last.text.trim()) break;
     runs.pop();
   }
-  return { runs, source: htmlPlainText(runs) };
+  const blocks = htmlStructure(runs);
+  if (!count && !blocks) return;
+  return { runs, source: htmlPlainText(runs), ...(blocks ? { blocks } : {}) };
 }
 
 // Source edits can retain protected formulas when their original spelling is
@@ -121,7 +126,7 @@ export async function translateHtmlPlan(
   init: Partial<Request>,
   signal: AbortSignal,
   started: (id: string) => void,
-): Promise<{ event: TranslationEvent; runs: HtmlRun[] }> {
+): Promise<{ event: TranslationEvent; runs: HtmlRun[]; blocks?: HtmlBlock[] }> {
   signal.throwIfAborted();
   const maths = plan.runs.filter((r): r is Extract<HtmlRun, { kind: 'math' }> => r.kind === 'math');
   if (maths.length > 96)
@@ -134,7 +139,50 @@ export async function translateHtmlPlan(
         warnings: ['数式が多いため、原文を表示しています。翻訳する範囲を小さくしてください。'],
       },
       runs: plan.runs,
+      blocks: plan.blocks,
     };
+  if (plan.blocks && init.mode !== 'page') {
+    const warnings = new Set<string>();
+    let complete = true;
+    let requestId = 'html-list';
+    const translateBlocks = async (blocks: HtmlBlock[]): Promise<HtmlBlock[]> => {
+      const output: HtmlBlock[] = [];
+      for (const block of blocks) {
+        signal.throwIfAborted();
+        if (block.kind === 'list') {
+          const items = [];
+          for (const item of block.items)
+            items.push({ ...item, blocks: await translateBlocks(item.blocks) });
+          output.push({ ...block, items });
+        } else {
+          const result = await translateHtmlPlan(
+            { runs: block.runs, source: htmlPlainText(block.runs) },
+            client,
+            init,
+            signal,
+            started,
+          );
+          requestId = result.event.requestId;
+          complete &&= result.event.type === 'complete';
+          for (const warning of result.event.warnings ?? []) warnings.add(warning);
+          output.push({ ...block, runs: result.runs });
+        }
+      }
+      return output;
+    };
+    const blocks = await translateBlocks(plan.blocks);
+    return {
+      event: {
+        type: complete ? 'complete' : 'incomplete',
+        requestId,
+        sequence: 1,
+        text: structureText(blocks),
+        warnings: [...warnings],
+      },
+      runs: structureRuns(blocks),
+      blocks,
+    };
+  }
   const { prefix, tokens } = protectedTokens(plan.source, maths.length);
   let index = 0;
   const input = plan.runs.map((r) => (r.kind === 'text' ? r.text : tokens[index++])).join('');
@@ -201,8 +249,34 @@ export async function translateHtmlPlan(
   }
 }
 
-export function renderHtmlMath(runs: HtmlRun[]): DocumentFragment {
+export function renderHtmlMath(runs: HtmlRun[], blocks?: HtmlBlock[]): DocumentFragment {
   const fragment = document.createDocumentFragment();
+  if (blocks) {
+    for (const block of blocks) {
+      if (block.kind === 'paragraph') {
+        const paragraph = document.createElement('div');
+        paragraph.className = 'html-paragraph';
+        paragraph.append(renderHtmlMath(block.runs));
+        fragment.append(paragraph);
+      } else {
+        const list = document.createElement(block.ordered ? 'ol' : 'ul');
+        list.className = 'html-list';
+        if (list instanceof HTMLOListElement) {
+          list.start = block.start;
+          list.reversed = block.reversed;
+          if (block.type) list.type = block.type;
+        }
+        for (const item of block.items) {
+          const li = document.createElement('li');
+          if (block.ordered) li.value = item.value;
+          li.append(renderHtmlMath([], item.blocks));
+          list.append(li);
+        }
+        fragment.append(list);
+      }
+    }
+    return fragment;
+  }
   for (const run of runs) {
     if (run.kind === 'text') {
       fragment.append(document.createTextNode(run.text));

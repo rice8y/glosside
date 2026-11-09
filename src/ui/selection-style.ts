@@ -115,6 +115,12 @@ section::before {
   margin-inline: auto;
   filter: invert(1) brightness(.96);
 }
+.html-paragraph { white-space: pre-wrap; }
+.html-paragraph + .html-paragraph { margin-top: 10px; }
+.html-list { margin: 10px 0; padding-inline-start: 1.6em; white-space: normal; }
+.html-list li { padding-inline-start: .15em; margin: 6px 0; }
+.html-list .html-list { margin: 6px 0; }
+.html-list + .html-paragraph { margin-top: 10px; }
 .html-math { display: inline-block; vertical-align: baseline; white-space: nowrap; overflow-wrap: normal; }
 .html-math math { font-size: 1em; color: inherit; }
 .html-math img { display: inline-block; max-width: none; height: auto; vertical-align: middle; background: white; border-radius: 2px; padding: 1px; }
