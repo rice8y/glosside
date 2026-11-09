@@ -1,6 +1,6 @@
 import { EXCLUDED } from './blocks';
 import { htmlMathPlan, type HtmlPlan, type HtmlRun } from './math-plan';
-import { mathRoot, MATH_SELECTOR } from './math-elements';
+import { mathRoot, MATH_SELECTOR, MATH_ACCESSIBILITY_SELECTOR } from './math-elements';
 
 export interface PageMath {
   container: Element;
@@ -33,7 +33,7 @@ export function pageMath(node: Text, read: (node: Text) => string): PageMath | u
     return;
   if (!container.querySelector(MATH_SELECTOR)) return;
   for (const element of container.querySelectorAll('*')) {
-    if (mathRoot(element)) continue;
+    if (mathRoot(element) || element.closest(MATH_ACCESSIBILITY_SELECTOR)) continue;
     if (
       !element.matches('span') ||
       element.hasAttribute('role') ||

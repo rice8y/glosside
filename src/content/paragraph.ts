@@ -1,8 +1,8 @@
 import { EXCLUDED, sourceText } from './blocks';
-import { mathRoot } from './math-elements';
+import { mathRoot, MATH_ACCESSIBILITY_SELECTOR } from './math-elements';
 
 function isBlock(element: Element) {
-  if (mathRoot(element)) return false;
+  if (mathRoot(element) || element.matches(MATH_ACCESSIBILITY_SELECTOR)) return false;
   if (element.matches('br,hr')) return true;
   const display = getComputedStyle(element).display;
   if (display)

@@ -1,3 +1,8 @@
+// Accessibility copies can sit beside (rather than inside) the visible equation.
+// Keep their metadata available, but never extract them as separate page content.
+export const MATH_ACCESSIBILITY_SELECTOR =
+  '.mwe-math-mathml-a11y,mjx-assistive-mml,.MJX_Assistive_MathML,.katex-mathml';
+
 // Outermost containers take precedence over their visual and accessibility
 // representations, so KaTeX/MathJax equations are never extracted twice.
 export const MATH_SELECTOR = [
@@ -99,10 +104,31 @@ function mathText(node: Node, depth = 0): string {
   }
 }
 
+export function mathMetadata(element: Element): Element | undefined {
+  if (element.matches('math')) return element;
+  const contained = element.querySelector('math');
+  if (contained) return contained;
+  // MediaWiki's MathJax enhancement leaves the original MathML in a clipped
+  // accessibility sibling and copies its identity onto the rendered equation.
+  const previous = element.previousElementSibling;
+  if (
+    element.matches('mjx-container,.MathJax,.MathJax_SVG') &&
+    previous?.matches(MATH_ACCESSIBILITY_SELECTOR)
+  ) {
+    const math = previous.querySelector('math');
+    const rendered = element.querySelector('[data-mml-node="math"]');
+    const sourceId = math?.getAttribute('about') ?? math?.id;
+    const renderedId = rendered?.getAttribute('about') ?? rendered?.id;
+    if (math && (!sourceId || !renderedId || sourceId === renderedId)) return math;
+  }
+}
+
 export function mathSource(element: Element): string {
-  const annotation = element.querySelector('annotation[encoding="application/x-tex"]');
+  const math = mathMetadata(element);
+  const annotation =
+    math?.querySelector('annotation[encoding="application/x-tex"]') ??
+    element.querySelector('annotation[encoding="application/x-tex"]');
   const image = element.matches('img') ? element : element.querySelector('img');
-  const math = element.matches('math') ? element : element.querySelector('math');
   const source =
     annotation?.textContent ||
     math?.getAttribute('alttext') ||

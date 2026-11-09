@@ -1,7 +1,9 @@
-import { MATH_SELECTOR, mathSource } from './math-elements';
+import { MATH_SELECTOR, MATH_ACCESSIBILITY_SELECTOR, mathSource } from './math-elements';
 export const EXCLUDED =
   'script,style,noscript,code,pre,math,svg,canvas,textarea,input,select,[contenteditable]:not([contenteditable="false"]),[translate="no"],[hidden],[aria-hidden="true"],[data-local-translator],' +
-  MATH_SELECTOR;
+  MATH_SELECTOR +
+  ',' +
+  MATH_ACCESSIBILITY_SELECTOR;
 export function sourceText(
   element: Element,
   read: (node: Text) => string = (node) => node.data,

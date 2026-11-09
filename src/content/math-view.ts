@@ -1,4 +1,4 @@
-import { mathSource } from './math-elements';
+import { mathSource, mathMetadata } from './math-elements';
 
 const MML = 'http://www.w3.org/1998/Math/MathML';
 const SVG = 'http://www.w3.org/2000/svg';
@@ -66,7 +66,7 @@ export function mathView(root: Element): HTMLElement {
   host.setAttribute('role', 'math');
   host.setAttribute('aria-label', source);
   let remaining = 4096;
-  const math = root.matches('math') ? root : root.querySelector('math');
+  const math = mathMetadata(root);
   const copyMath = (node: Node): Node | undefined => {
     if (--remaining < 0) throw new Error('Math node limit');
     if (node instanceof Text) return document.createTextNode(node.data);
@@ -197,6 +197,10 @@ export function mathView(root: Element): HTMLElement {
     if (math && nativeMath) {
       const copy = copyMath(math);
       if (!copy || !copy.textContent?.trim()) throw new Error('Missing MathML');
+      // Native MathML already exposes a structured equation to accessibility.
+      // Do not wrap it in a second, separately labelled ARIA math object.
+      host.removeAttribute('role');
+      host.removeAttribute('aria-label');
       host.append(copy);
     } else {
       const svg = root.matches('svg')
@@ -215,6 +219,7 @@ export function mathView(root: Element): HTMLElement {
       if (svg) {
         const copy = copySvg(svg);
         if (!copy) throw new Error('Missing SVG');
+        if (copy instanceof Element) copy.setAttribute('aria-hidden', 'true');
         if (copy instanceof SVGElement) {
           const style = getComputedStyle(svg);
           const size = Number.parseFloat(style.fontSize) || 16;
@@ -234,6 +239,7 @@ export function mathView(root: Element): HTMLElement {
         )
           throw new Error('Invalid image URL');
         const copy = document.createElement('img');
+        copy.setAttribute('aria-hidden', 'true');
         copy.referrerPolicy = 'no-referrer';
         copy.alt = source;
         copy.src = url.href;
@@ -246,6 +252,8 @@ export function mathView(root: Element): HTMLElement {
           'error',
           () => {
             host.textContent = source;
+            host.removeAttribute('role');
+            host.removeAttribute('aria-label');
             host.dataset.mathFallback = 'true';
             host.dispatchEvent(new Event('math-render-error', { bubbles: true }));
           },
@@ -256,11 +264,14 @@ export function mathView(root: Element): HTMLElement {
         if (root.namespaceURI === MML) throw new Error('Unsupported MathML');
         const copy = copyLayout(root);
         if (!copy) throw new Error('Missing math layout');
+        if (copy instanceof Element) copy.setAttribute('aria-hidden', 'true');
         host.append(copy);
       }
     }
   } catch {
     host.textContent = source;
+    host.removeAttribute('role');
+    host.removeAttribute('aria-label');
     host.dataset.mathFallback = 'true';
   }
   return host;

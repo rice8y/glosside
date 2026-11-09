@@ -30,7 +30,7 @@ Input fields are excluded from automatic page translation; password fields are e
 
 ## Equations on web pages
 
-Selection and paragraph popups preserve MathML, MathJax (HTML or SVG), KaTeX, and images explicitly marked as equations. Inline formulas stay within the translated sentence; display equations remain separate and can scroll horizontally. A selection crossing part of a formula includes the complete formula. Visual output and accessibility MathML are treated as one equation.
+Selection and paragraph popups preserve MathML, MathJax (HTML or SVG), KaTeX, and images explicitly marked as equations. Inline formulas stay within the translated sentence; display equations remain separate and can scroll horizontally. A selection crossing part of a formula includes the complete formula. Visual output and accessibility MathML are treated as one equation. This includes accessibility copies stored beside the visible MathJax output. Native MathML exposes one structured equation in the accessibility tree; visual-only copies use one labelled math object.
 
 MathML is rendered natively when available. Otherwise, the popup uses an inert copy of the rendered SVG or HTML, or the original equation image. Scripts, event handlers, links, and external SVG references are not copied. Unsupported rendering falls back to the formula's source text or label. Copying a translation includes available TeX, a textual MathML representation, or image alternative text; formulas without textual metadata use an equation label. Images are preserved without OCR. Unmarked images, canvas equations, and arbitrary TeX in plain text are not detected as equations.
 
