@@ -23,6 +23,7 @@ export async function translatePdfPlan(
 ): Promise<TranslationEvent> {
   const parts: PdfPart[] = [],
     warnings = new Set<string>(plan.warning ? [plan.warning] : []);
+  const translatedCells = new Map<string, string>();
   let complete = true,
     requestId = 'pdf-result',
     failed = false;
@@ -33,14 +34,20 @@ export async function translatePdfPlan(
       for (const row of table.rows)
         for (const cell of row) {
           signal.throwIfAborted();
-          // Numbers, units attached to numbers, and formula-like cells stay literal.
+          // Numeric values, uppercase identifiers, and formula-like cells stay literal.
           if (
             failed ||
-            !cell.source.trim() ||
+            !/[\p{L}]/u.test(cell.source) ||
             /[\p{N}]/u.test(cell.source) ||
+            /^[A-Z][A-Z0-9]*(?:[-_][A-Z0-9]+)*$/u.test(cell.source.trim()) ||
             mayContainMath(cell.source)
           )
             continue;
+          const cached = translatedCells.get(cell.source);
+          if (cached !== undefined) {
+            cell.text = cached;
+            continue;
+          }
           const result = await translatePdfPlan(
             {
               parts: [
@@ -56,6 +63,7 @@ export async function translatePdfPlan(
             },
           );
           cell.text = result.text ?? cell.source;
+          if (result.type === 'complete') translatedCells.set(cell.source, cell.text);
           for (const warning of result.warnings ?? []) warnings.add(warning);
           if (result.type !== 'complete') {
             complete = false;

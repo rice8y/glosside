@@ -177,14 +177,37 @@ export class TranslationPopup {
     this.output.replaceChildren();
     for (const part of parts) {
       if (part.kind === 'table') {
-        const table = el('table', { class: 'html-table' });
-        const body = el('tbody');
-        for (const row of part.rows) {
+        const table = el('table', { class: 'html-table pdf-table' });
+        let body: HTMLTableSectionElement | undefined;
+        for (const [index, row] of part.rows.entries()) {
           const tr = el('tr');
-          for (const cell of row) tr.append(el(cell.header ? 'th' : 'td', {}, cell.text));
-          body.append(tr);
+          for (const cell of row)
+            tr.append(
+              el(
+                cell.header ? 'th' : 'td',
+                {
+                  class: [
+                    cell.bold ? 'pdf-cell-bold' : '',
+                    cell.underline ? 'pdf-cell-underline' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' '),
+                  ...(cell.colSpan ? { colspan: String(cell.colSpan) } : {}),
+                  ...(cell.header ? { scope: cell.colSpan ? 'rowgroup' : 'col' } : {}),
+                },
+                cell.text,
+              ),
+            );
+          if (index === 0 && row.every((cell) => cell.header && !cell.colSpan)) {
+            table.append(el('thead', {}, tr));
+          } else {
+            if (!body || (row.length === 1 && row[0].colSpan === part.columns)) {
+              body = el('tbody');
+              table.append(body);
+            }
+            body.append(tr);
+          }
         }
-        table.append(body);
         this.output.append(
           el(
             'div',
@@ -197,6 +220,36 @@ export class TranslationPopup {
             table,
           ),
         );
+        continue;
+      }
+      if (part.kind === 'table-image') {
+        const image = el('img', {
+          class: 'table-source-image',
+          src: part.image.data,
+          alt: part.source,
+          width: String(part.image.width),
+          height: String(part.image.height),
+          draggable: 'false',
+        });
+        image.style.width = part.image.widthEm + 'em';
+        const figure = el(
+          'figure',
+          {
+            class: 'table-source',
+            tabindex: '0',
+            'aria-label': '原文の表（横にスクロールできます）',
+          },
+          image,
+        );
+        image.addEventListener(
+          'error',
+          () => {
+            if (!this.disposed && this.output.contains(figure))
+              figure.replaceWith(el('div', { class: 'output-prose output-original' }, part.source));
+          },
+          { once: true },
+        );
+        this.output.append(figure);
         continue;
       }
       if (part.kind === 'paragraph') {

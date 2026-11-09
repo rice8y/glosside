@@ -17,10 +17,18 @@ export interface PdfTable {
   kind: 'table';
   source: string;
   columns: number;
-  rows: { header: boolean; source: string; text: string }[][];
+  rows: {
+    header: boolean;
+    colSpan?: number;
+    bold?: boolean;
+    underline?: boolean;
+    source: string;
+    text: string;
+  }[][];
 }
 export type PdfPart =
   | PdfTable
+  | { kind: 'table-image'; source: string; image: PdfImage }
   | { kind: 'paragraph'; source: string; runs: PdfInlineRun[] }
   | { kind: 'text'; source: string; text: string }
   | { kind: 'original'; source: string }
@@ -53,7 +61,16 @@ export function pdfPlainText(parts: PdfPart[]): string {
     .map((p) =>
       p.kind === 'table'
         ? '\n' +
-          p.rows.map((row) => row.map((c) => c.text.replace(/\s+/gu, ' ')).join('\t')).join('\n') +
+          p.rows
+            .map((row) =>
+              row
+                .flatMap((c) => [
+                  c.text.replace(/\s+/gu, ' '),
+                  ...Array<string>((c.colSpan ?? 1) - 1).fill(''),
+                ])
+                .join('\t'),
+            )
+            .join('\n') +
           '\n'
         : p.kind === 'paragraph'
           ? p.runs.map((r) => (r.kind === 'text' ? r.text : r.source)).join('')
@@ -108,11 +125,15 @@ export function validPdfPlan(value: unknown, source: string): value is PdfPlan {
         p.rows.some(
           (row) =>
             !Array.isArray(row) ||
-            row.length !== p.columns ||
+            row.length > p.columns ||
             row.some(
               (c) =>
                 !c ||
                 typeof c.header !== 'boolean' ||
+                (c.bold !== undefined && typeof c.bold !== 'boolean') ||
+                (c.underline !== undefined && typeof c.underline !== 'boolean') ||
+                (c.colSpan !== undefined &&
+                  (!Number.isInteger(c.colSpan) || c.colSpan < 1 || c.colSpan > p.columns)) ||
                 typeof c.source !== 'string' ||
                 typeof c.text !== 'string' ||
                 c.text !== c.source ||
@@ -120,6 +141,8 @@ export function validPdfPlan(value: unknown, source: string): value is PdfPlan {
             ),
         )
       )
+        return false;
+      if (p.rows.some((row) => row.reduce((n, c) => n + (c.colSpan ?? 1), 0) !== p.columns))
         return false;
       cells += p.rows.length * p.columns;
       if (cells > 256) return false;
@@ -145,7 +168,7 @@ export function validPdfPlan(value: unknown, source: string): value is PdfPlan {
         return false;
     } else if (p.kind === 'text') {
       if (typeof p.text !== 'string' || p.text.length > 16000) return false;
-    } else if (p.kind === 'equation') {
+    } else if (p.kind === 'equation' || p.kind === 'table-image') {
       if (!validImage(p.image)) return false;
     } else if (p.kind !== 'original') return false;
   }

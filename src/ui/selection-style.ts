@@ -132,6 +132,14 @@ section::before {
 .html-table caption { text-align: left; margin-bottom: 8px; font-weight: 600; }
 .html-table .html-paragraph { white-space: pre-line; }
 .html-table .html-list { margin-block: 0; }
+.pdf-table { width: max-content; min-width: 100%; }
+.pdf-table th, .pdf-table td { min-width: 4em; padding: 6px 8px; }
+.pdf-table th[scope="rowgroup"] { text-align: left; }
+.pdf-cell-bold { font-weight: 700; }
+.pdf-cell-underline { text-decoration: underline; text-underline-offset: .12em; }
+.table-source { margin: 10px 0; overflow-x: auto; overscroll-behavior-x: contain; background: white; border-radius: 3px; }
+.table-source:focus-visible { outline: 2px solid #c0a9ff; outline-offset: -2px; }
+.table-source-image { display: block; height: auto; max-width: none; filter: none; }
 .html-literal { font: .92em/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 .html-literal-block { margin: 10px 0; max-width: 100%; overflow-x: auto; white-space: pre; }
 .html-literal-block .html-literal { white-space: pre; overflow-wrap: normal; }

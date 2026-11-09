@@ -5,7 +5,10 @@ import type { PdfTable } from '../shared/pdf-equations';
 export const PDF_TABLE_WARNING = '行と列を安全に保持できない表は、原文のまま表示しています。';
 export interface TableCandidate {
   items: PdfTextItem[];
-  rows?: { header: boolean; items: PdfTextItem[] }[][];
+  box?: number[];
+  fontSize?: number;
+  rules?: Line[];
+  rows?: { header: boolean; colSpan?: number; items: PdfTextItem[] }[][];
 }
 export interface TablePage extends PdfTextPage {
   tables: TableCandidate[];
@@ -76,13 +79,18 @@ export function taggedTables(root: StructTreeNode | null, items: PdfTextItem[]):
       all.some((i) => i.rotated)
     )
       safe = false;
-    out.push({ items: all, ...(safe ? { rows: grid } : {}) });
+    out.push({
+      items: all,
+      box: itemBox(all),
+      fontSize: Math.max(...all.map((i) => i.size)),
+      ...(safe ? { rows: grid } : {}),
+    });
   };
   if (root) walk(root);
   return out;
 }
 
-type Line = { x1: number; y1: number; x2: number; y2: number };
+export type Line = { x1: number; y1: number; x2: number; y2: number };
 type Matrix = number[];
 const multiply = (a: Matrix, b: Matrix): Matrix => [
   a[0] * b[0] + a[2] * b[1],
@@ -194,7 +202,11 @@ export function ruledTables(lines: Line[], items: PdfTextItem[]): TableCandidate
       return end >= max - 0.6;
     };
     if (xs.length > 13 || ys.length > 41) {
-      out.push({ items: all });
+      out.push({
+        items: all,
+        box: [left, bottom, right, top],
+        fontSize: Math.max(...all.map((i) => i.size)),
+      });
       continue;
     }
     let safe =
@@ -228,7 +240,12 @@ export function ruledTables(lines: Line[], items: PdfTextItem[]): TableCandidate
       if (c < 0 || r < 0 || item.rotated) safe = false;
       else rows[r][c].items.push(item);
     }
-    out.push({ items: all, ...(safe ? { rows } : {}) });
+    out.push({
+      items: all,
+      box: [left, bottom, right, top],
+      fontSize: Math.max(...all.map((i) => i.size)),
+      ...(safe ? { rows } : {}),
+    });
   }
   return out;
 }
@@ -246,12 +263,49 @@ function mapped(text: string) {
   offsets.push(text.length);
   return { value, offsets };
 }
-export function alignTables(
-  pages: TablePage[],
-  source: string,
-): { start: number; end: number; table: PdfTable }[] | undefined {
+function itemBox(items: PdfTextItem[]): number[] {
+  return [
+    Math.min(...items.map((i) => i.x)),
+    Math.min(...items.map((i) => i.y + i.size * (i.descent ?? -0.2))),
+    Math.max(...items.map((i) => i.x + i.width)),
+    Math.max(...items.map((i) => i.y + i.size * (i.ascent ?? 0.9))),
+  ];
+}
+function cellStyle(items: PdfTextItem[], rules: Line[] = []) {
+  const visible = items.filter((i) => i.str.trim());
+  if (!visible.length) return {};
+  const left = Math.min(...visible.map((i) => i.x)),
+    right = Math.max(...visible.map((i) => i.x + i.width));
+  const baseline = visible[0].y,
+    size = visible[0].size;
+  const underline =
+    visible.every((i) => Math.abs(i.y - baseline) < size * 0.2) &&
+    rules.some(
+      (line) =>
+        Math.abs(line.y1 - line.y2) < 0.1 &&
+        Math.abs(Math.min(line.x1, line.x2) - left) < 0.8 &&
+        Math.abs(Math.max(line.x1, line.x2) - right) < 0.8 &&
+        baseline - line.y1 > size * 0.05 &&
+        baseline - line.y1 < size * 0.35,
+    );
+  const bold = visible.every((i) => /bold|medi|demi/i.test(i.fontLabel ?? ''));
+  return { ...(underline ? { underline: true } : {}), ...(bold ? { bold: true } : {}) };
+}
+export interface TableRegion {
+  kind: 'table-region';
+  source: string;
+  page: number;
+  box: number[];
+  fontSize: number;
+}
+export interface TableMatch {
+  start: number;
+  end: number;
+  table: PdfTable | TableRegion;
+}
+export function alignTables(pages: TablePage[], source: string): TableMatch[] | undefined {
   const selected = mapped(source);
-  const matches: { start: number; end: number; table: PdfTable }[] = [];
+  const matches: TableMatch[] = [];
   if (!selected.value) return [];
   for (const page of pages)
     for (const candidate of page.tables) {
@@ -261,7 +315,7 @@ export function alignTables(
       if (!value) continue;
       const start = selected.value.indexOf(value);
       if (start >= 0) {
-        if (!candidate.rows || selected.value.indexOf(value, start + 1) >= 0) return;
+        if (selected.value.indexOf(value, start + 1) >= 0) return;
         let occurrences = 0;
         for (const p of pages) {
           const stream = mapped(p.items.map((i) => i.str).join('')).value;
@@ -272,16 +326,47 @@ export function alignTables(
         const a = selected.offsets[start];
         const last = selected.offsets[start + value.length - 1];
         const b = last + String.fromCodePoint(source.codePointAt(last)!).length;
+        if (!candidate.rows) {
+          const box = candidate.box;
+          if (
+            !box ||
+            !candidate.fontSize ||
+            page.items.some(
+              (i) =>
+                visible(i) &&
+                !candidate.items.includes(i) &&
+                i.x < box[2] &&
+                i.x + i.width > box[0] &&
+                i.y < box[3] &&
+                i.y + i.size > box[1],
+            )
+          )
+            return;
+          matches.push({
+            start: a,
+            end: b,
+            table: {
+              kind: 'table-region',
+              source: source.slice(a, b),
+              page: page.number,
+              box,
+              fontSize: candidate.fontSize,
+            },
+          });
+          continue;
+        }
         matches.push({
           start: a,
           end: b,
           table: {
             kind: 'table',
             source: source.slice(a, b),
-            columns: candidate.rows[0].length,
+            columns: candidate.rows[0].reduce((n, c) => n + (c.colSpan ?? 1), 0),
             rows: candidate.rows.map((row) =>
               row.map((cell) => ({
                 header: cell.header,
+                ...cellStyle(cell.items, candidate.rules),
+                ...(cell.colSpan && cell.colSpan > 1 ? { colSpan: cell.colSpan } : {}),
                 source: cellText(cell.items),
                 text: cellText(cell.items),
               })),
@@ -308,22 +393,17 @@ export function alignTables(
         at = pageText.indexOf(selected.value, at + 1)
       )
         if (at < max && at + selected.value.length > min) return;
-      // A selection spanning pages cannot match a single page stream. Its edge
-      // anchors can still prove that an incomplete table was selected.
-      if (selected.value.length >= 24) {
-        const first = pageText.indexOf(selected.value.slice(0, 24));
-        const last = pageText.indexOf(selected.value.slice(-24));
-        if (
-          (first >= 0 && first < max && first + selected.value.length > min) ||
-          (last >= 0 && last + 24 > min && last + 24 - selected.value.length < max)
-        )
-          return;
-      }
+      // A short caption suffix can occur beside many different tables. Never
+      // extrapolate selection boundaries from such anchors: only a complete
+      // source match can establish that this table was partially selected.
       if (value.includes(selected.value)) return;
     }
   matches.sort((a, b) => a.start - b.start);
   if (
-    matches.reduce((sum, m) => sum + m.table.rows.length * m.table.columns, 0) > 256 ||
+    matches.reduce(
+      (sum, m) => sum + (m.table.kind === 'table' ? m.table.rows.length * m.table.columns : 0),
+      0,
+    ) > 256 ||
     matches.length > 16 ||
     matches.some((m, i) => i > 0 && m.start < matches[i - 1].end)
   )

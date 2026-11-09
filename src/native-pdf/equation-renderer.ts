@@ -1,3 +1,5 @@
+import { horizontalTables } from './horizontal-tables';
+import { renderTableRegion } from './table-renderer';
 import {
   alignTables,
   taggedTables,
@@ -594,15 +596,25 @@ export async function prepareEquations(
       count += items.length;
       if (count > 200_000) return originalPdf(source);
       const tagged = relevant ? taggedTables(await page.getStructTree(), items) : [];
-      const ruled = operators ? ruledTables(tableLines(operators, OPS), items) : [];
+      const lines = operators ? tableLines(operators, OPS) : [];
+      const ruled = ruledTables(lines, items);
+      const horizontal = horizontalTables(lines, items).filter(
+        (table) => !ruled.some((t) => t.items.some((i) => table.items.includes(i))),
+      );
       // Tagged ownership wins; never reinterpret an unsupported tagged table as a grid.
       const tables = [
         ...tagged,
-        ...ruled.filter(
+        ...[...ruled, ...horizontal].filter(
           (table) => !tagged.some((t) => t.items.some((i) => table.items.includes(i))),
         ),
       ];
-      pages.push({ number, view: page.view, items, glyphs, tables });
+      pages.push({
+        number,
+        view: page.view,
+        items,
+        glyphs,
+        tables: tables.map((table) => ({ ...table, rules: lines })),
+      });
     }
     const tables = alignTables(pages, source);
     if (!tables) return { parts: [{ kind: 'original', source }], warning: PDF_TABLE_WARNING };
@@ -617,7 +629,21 @@ export async function prepareEquations(
     };
     for (const match of tables) {
       await prose(source.slice(cursor, match.start));
-      plan.parts.push(match.table);
+      if (match.table.kind === 'table') plan.parts.push(match.table);
+      else {
+        try {
+          plan.parts.push({
+            kind: 'table-image',
+            source: match.table.source,
+            image: await renderTableRegion(pdf, match.table, signal),
+          });
+          plan.warning = PDF_TABLE_WARNING;
+        } catch {
+          signal.throwIfAborted();
+          plan.parts.push({ kind: 'original', source: match.table.source });
+          plan.warning = PDF_TABLE_WARNING;
+        }
+      }
       cursor = match.end;
     }
     await prose(source.slice(cursor));
