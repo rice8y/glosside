@@ -1,5 +1,6 @@
 import type { HtmlRun } from './math-plan';
 import { tableStructure, tableText, type HtmlTable } from './html-table';
+import { flowOwner } from './html-layout';
 
 export type HtmlBlock =
   | HtmlTable
@@ -56,8 +57,13 @@ export function htmlStructure(runs: HtmlRun[]): HtmlBlock[] | undefined {
     if (row) selected.add(row);
   }
   let hasStructure = false;
+  let atBoundary = true;
+  const owners = new Map<Element, Element | undefined>();
   for (const [index, run] of runs.entries()) {
-    if (run.kind === 'text' && run.boundary) continue;
+    if (run.kind === 'text' && run.boundary) {
+      atBoundary = true;
+      continue;
+    }
     const { element, path } = paths[index];
     if (!element) continue;
     let target = blocks;
@@ -104,23 +110,62 @@ export function htmlStructure(runs: HtmlRun[]): HtmlBlock[] | undefined {
       target = entry.blocks;
     }
     if (run.kind === 'text' && !run.text) continue;
-    const owner =
-      element.closest('p,div,li,td,th,caption,dd,dt,blockquote,h1,h2,h3,h4,h5,h6') ?? undefined;
+    if (!owners.has(element)) owners.set(element, flowOwner(element));
+    const owner = owners.get(element);
     let paragraph = target.at(-1);
     if (
       run.kind === 'text' &&
-      !run.element &&
+      !run.lineBreak &&
+      !run.preserveWhitespace &&
       !run.text.trim() &&
-      (paragraph?.kind !== 'paragraph' || paragraph.owner !== owner)
+      (atBoundary || paragraph?.kind !== 'paragraph' || paragraph.owner !== owner)
     )
       continue;
-    if (paragraph?.kind !== 'paragraph' || paragraph.owner !== owner) {
+    if (
+      atBoundary ||
+      (run.kind !== 'text' && run.block) ||
+      paragraph?.kind !== 'paragraph' ||
+      paragraph.owner !== owner
+    ) {
       paragraph = { kind: 'paragraph', owner, runs: [] };
       target.push(paragraph);
     }
     paragraph.runs.push(run);
+    if (run.kind === 'text' && run.lineBreak) hasStructure = true;
+    atBoundary = run.kind !== 'text' && run.block;
   }
-  return hasStructure ? blocks : undefined;
+  // Trim only collapsible flow whitespace. Literal code and explicit line
+  // breaks retain their exact content; layout spacing is supplied by the view.
+  const clean = (children: HtmlBlock[]) => {
+    for (const block of children) {
+      if (block.kind === 'paragraph') {
+        block.runs = block.runs.map((run) => (run.kind === 'text' ? { ...run } : run));
+        for (const direction of [1, -1]) {
+          for (
+            let i = direction === 1 ? 0 : block.runs.length - 1;
+            i >= 0 && i < block.runs.length;
+            i += direction
+          ) {
+            const run = block.runs[i];
+            if (run.kind !== 'text' || run.lineBreak || run.preserveWhitespace) break;
+            // Runs also back the unstructured/page path; do not mutate them.
+            run.text =
+              direction === 1
+                ? run.text.replace(/^[\t\f\r\n ]+/, '')
+                : run.text.replace(/[\t\f\r\n ]+$/, '');
+            if (run.text) break;
+          }
+        }
+      } else if (block.kind === 'list') {
+        for (const item of block.items) clean(item.blocks);
+      } else {
+        clean(block.caption);
+        for (const row of block.rows) for (const cell of row.cells) clean(cell.blocks);
+      }
+    }
+  };
+  clean(blocks);
+  return hasStructure || blocks.length > 1 ? blocks : undefined;
 }
 
 export function structureText(blocks: HtmlBlock[], depth = 0): string {
@@ -129,10 +174,7 @@ export function structureText(blocks: HtmlBlock[], depth = 0): string {
       if (block.kind === 'table')
         return tableText(block, (children) => structureText(children, depth));
       if (block.kind === 'paragraph')
-        return block.runs
-          .map((run) => (run.kind === 'text' ? run.text : run.source))
-          .join('')
-          .trim();
+        return block.runs.map((run) => (run.kind === 'text' ? run.text : run.source)).join('');
       return block.items
         .map((item) => {
           const prefix = '  '.repeat(depth) + (block.ordered ? item.value + '. ' : '• ');

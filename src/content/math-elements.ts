@@ -1,3 +1,5 @@
+import { flowBlock } from './html-layout';
+
 // Accessibility copies can sit beside (rather than inside) the visible equation.
 // Keep their metadata available, but never extract them as separate page content.
 export const MATH_ACCESSIBILITY_SELECTOR =
@@ -143,6 +145,8 @@ export function blockMath(element: Element): boolean {
   return (
     element.matches(
       '.katex-display,.MathJax_Display,.MathJax_SVG_Display,[display="block"],[display="true"]',
-    ) || !!element.querySelector('math[display="block"]')
+    ) ||
+    mathMetadata(element)?.getAttribute('display') === 'block' ||
+    flowBlock(element)
   );
 }

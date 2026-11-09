@@ -117,6 +117,9 @@ section::before {
 }
 .html-paragraph { white-space: pre-wrap; }
 .html-paragraph + .html-paragraph { margin-top: 10px; }
+.html-math-paragraph { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; scrollbar-color: #68788e transparent; }
+.html-math-paragraph:focus-visible { outline: 2px solid #c0a9ff; outline-offset: -2px; }
+.html-paragraph > .html-math-block:only-child, .html-paragraph > .html-literal-block:only-child { margin-block: 0; }
 .html-list { margin: 10px 0; padding-inline-start: 1.6em; white-space: normal; }
 .html-list li { padding-inline-start: .15em; margin: 6px 0; }
 .html-list .html-list { margin: 6px 0; }

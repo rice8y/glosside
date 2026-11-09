@@ -3,6 +3,7 @@ import { EXCLUDED } from './blocks';
 import { mathRoot, mathSource, blockMath } from './math-elements';
 import { mathView } from './math-view';
 import { literalRoot, literalText } from './literal-text';
+import { flowBlock, flowText } from './html-layout';
 import { protectedTokens, protectedPositions } from '../shared/protected-tokens';
 import { makeRequest } from '../shared/protocol';
 import type { Client } from '../shared/client';
@@ -10,13 +11,22 @@ import type { Request, TranslationEvent } from '../shared/types';
 import { explain, errorCode } from '../shared/errors';
 
 export type HtmlRun =
-  | { kind: 'text'; text: string; node?: Text; element?: Element; boundary?: boolean }
+  | {
+      kind: 'text';
+      text: string;
+      node?: Text;
+      element?: Element;
+      boundary?: boolean;
+      lineBreak?: boolean;
+      preserveWhitespace?: boolean;
+    }
   | { kind: 'literal'; source: string; element: Element; block: boolean }
   | { kind: 'math'; source: string; element: Element; block: boolean; view?: HTMLElement };
 export interface HtmlPlan {
   runs: HtmlRun[];
   source: string;
   blocks?: HtmlBlock[];
+  flow?: boolean;
 }
 export const htmlPlainText = (runs: HtmlRun[]) =>
   runs.map((r) => (r.kind === 'text' ? r.text : r.source)).join('');
@@ -32,8 +42,27 @@ export function htmlMathPlan(
   if (range.collapsed || !range.commonAncestorContainer.isConnected) return;
   const runs: HtmlRun[] = [];
   let count = 0;
-  const append = (text: string, node?: Text) => {
-    if (text) runs.push({ kind: 'text', text, node });
+  const append = (text: string, node: Text) => {
+    if (!text) return;
+    if (!snapshot) {
+      runs.push({ kind: 'text', text, node });
+      return;
+    }
+    const normalized = flowText(node, text);
+    for (const part of normalized.lines ? normalized.text.split(/(\n)/) : [normalized.text])
+      if (part)
+        runs.push({
+          kind: 'text',
+          text: part,
+          node,
+          ...(part === '\n' ? { lineBreak: true } : {}),
+          ...(normalized.preserve ? { preserveWhitespace: true } : {}),
+        });
+  };
+  const boundary = () => {
+    const last = runs.at(-1);
+    if (last && !(last.kind === 'text' && last.boundary))
+      runs.push({ kind: 'text', text: '\n', boundary: true });
   };
   const visit = (node: Node) => {
     if (!range.intersectsNode(node)) return;
@@ -53,9 +82,7 @@ export function htmlMathPlan(
           kind: 'literal',
           source,
           element: literal,
-          block:
-            literal.localName === 'pre' ||
-            /^(block|flex|grid)/.test(getComputedStyle(literal).display),
+          block: literal.localName === 'pre' || flowBlock(literal),
         });
       }
       return;
@@ -111,15 +138,13 @@ export function htmlMathPlan(
         runs.push({ kind: 'text', text: '', element: node });
       }
       if (node.localName === 'br') {
-        runs.push({ kind: 'text', text: '\n', element: node });
+        runs.push({ kind: 'text', text: '\n', element: node, lineBreak: true });
         return;
       }
-      const block = /^(block|list-item|table-row|flex|grid)/.test(style.display);
-      if (block && runs.length && !htmlPlainText(runs.slice(-1)).endsWith('\n'))
-        runs.push({ kind: 'text', text: '\n', boundary: true });
+      const block = flowBlock(node);
+      if (block) boundary();
       for (const child of node.childNodes) visit(child);
-      if (block && runs.length && !htmlPlainText(runs.slice(-1)).endsWith('\n'))
-        runs.push({ kind: 'text', text: '\n', boundary: true });
+      if (block) boundary();
     }
   };
   visit(mathRoot(range.commonAncestorContainer) ?? range.commonAncestorContainer);
@@ -130,12 +155,13 @@ export function htmlMathPlan(
     if (last.node || last.element || last.text.trim()) break;
     runs.pop();
   }
-  const blocks = htmlStructure(runs);
+  const blocks = snapshot ? htmlStructure(runs) : undefined;
   if (!count && !blocks) return;
   return {
     runs,
     source: blocks ? structureText(blocks) : htmlPlainText(runs),
     ...(blocks ? { blocks } : {}),
+    ...(snapshot ? { flow: true } : {}),
   };
 }
 
@@ -193,7 +219,7 @@ export async function translateHtmlPlan(
     let requestId = 'html-structure';
     const translateBlocks = async (blocks: HtmlBlock[]): Promise<HtmlBlock[]> => {
       const output: HtmlBlock[] = [];
-      for (const block of blocks) {
+      for (const [index, block] of blocks.entries()) {
         signal.throwIfAborted();
         if (block.kind === 'table') {
           const caption = await translateBlocks(block.caption);
@@ -211,10 +237,18 @@ export async function translateHtmlPlan(
             items.push({ ...item, blocks: await translateBlocks(item.blocks) });
           output.push({ ...block, items });
         } else {
+          // A sentence can lead into an equation in the next block. Supply
+          // neighbouring selected paragraphs as context, never as output slots.
+          const neighbours = [blocks[index - 1], block, blocks[index + 1]].filter(
+            (part) => part?.kind === 'paragraph',
+          );
+          const context = neighbours.length > 1 ? structureText(neighbours) : undefined;
           const result = await translateHtmlPlan(
-            { runs: block.runs, source: htmlPlainText(block.runs) },
+            { runs: block.runs, source: htmlPlainText(block.runs), flow: true },
             client,
-            init,
+            context && context.length <= 4000 && !context.includes('<|plamo:')
+              ? { ...init, context }
+              : init,
             signal,
             started,
           );
@@ -237,6 +271,46 @@ export async function translateHtmlPlan(
       },
       runs: structureRuns(blocks),
       blocks,
+    };
+  }
+  if (init.mode !== 'page' && plan.runs.some((run) => run.kind === 'text' && run.lineBreak)) {
+    const runs: HtmlRun[] = [];
+    let line: HtmlRun[] = [];
+    let complete = true;
+    let requestId = 'html-lines';
+    const warnings = new Set<string>();
+    const flush = async () => {
+      if (!line.length) return;
+      const result = await translateHtmlPlan(
+        { runs: line, source: htmlPlainText(line), flow: plan.flow },
+        client,
+        init,
+        signal,
+        started,
+      );
+      runs.push(...result.runs);
+      complete &&= result.event.type === 'complete';
+      requestId = result.event.requestId;
+      for (const warning of result.event.warnings ?? []) warnings.add(warning);
+      line = [];
+    };
+    for (const run of plan.runs) {
+      signal.throwIfAborted();
+      if (run.kind === 'text' && run.lineBreak) {
+        await flush();
+        runs.push(run);
+      } else line.push(run);
+    }
+    await flush();
+    return {
+      event: {
+        type: complete ? 'complete' : 'incomplete',
+        requestId,
+        sequence: 1,
+        text: htmlPlainText(runs),
+        warnings: [...warnings],
+      },
+      runs,
     };
   }
   const { prefix, tokens } = protectedTokens(plan.source, protectedRuns.length);
@@ -263,13 +337,11 @@ export async function translateHtmlPlan(
   try {
     const result = await client.result(request, signal);
     signal.throwIfAborted();
-    const positions = result.text && protectedPositions(result.text, prefix, tokens);
-    if (
-      result.type !== 'complete' ||
-      !result.text?.trim() ||
-      result.text.includes('<|plamo:') ||
-      !positions
-    )
+    // A model may add line breaks even to one source paragraph. Only DOM-authored
+    // boundaries control layout; explicit breaks are restored outside inference.
+    const text = plan.flow ? result.text?.replace(/[\t ]*[\r\n]+[\t ]*/g, ' ').trim() : result.text;
+    const positions = text && protectedPositions(text, prefix, tokens);
+    if (result.type !== 'complete' || !text?.trim() || text.includes('<|plamo:') || !positions)
       return {
         event: {
           ...result,
@@ -287,12 +359,12 @@ export async function translateHtmlPlan(
     let cursor = 0;
     for (const position of positions) {
       runs.push(
-        { kind: 'text', text: result.text.slice(cursor, position.start) },
+        { kind: 'text', text: text.slice(cursor, position.start) },
         protectedRuns[position.index],
       );
       cursor = position.start + position.token.length;
     }
-    runs.push({ kind: 'text', text: result.text.slice(cursor) });
+    runs.push({ kind: 'text', text: text.slice(cursor) });
     return { event: { ...result, text: htmlPlainText(runs) }, runs };
   } catch (error) {
     signal.throwIfAborted();
@@ -316,6 +388,10 @@ export function renderHtmlMath(runs: HtmlRun[], blocks?: HtmlBlock[]): DocumentF
       if (block.kind === 'paragraph') {
         const paragraph = document.createElement('div');
         paragraph.className = 'html-paragraph';
+        if (block.runs.some((run) => run.kind === 'math')) {
+          paragraph.classList.add('html-math-paragraph');
+          paragraph.tabIndex = 0;
+        }
         paragraph.append(renderHtmlMath(block.runs));
         fragment.append(paragraph);
       } else if (block.kind === 'table') {

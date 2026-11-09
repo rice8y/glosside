@@ -28,6 +28,12 @@ Complex page scripts can still affect extraction or presentation.
 Canvas content, closed shadow roots, custom editors, and browser-restricted pages are outside general automatic extraction support.
 Input fields are excluded from automatic page translation; password fields are excluded from extraction.
 
+## Paragraphs and line breaks in selection popups
+
+Selection and paragraph popups retain visible HTML block boundaries, including paragraphs, headings, nested block containers, and CSS block layouts. Text is translated within each block, so equations cannot move to another paragraph. Adjacent selected paragraphs provide bounded context for sentences that lead into an equation, without changing their output positions. Explicit display equations and code blocks keep their positions between surrounding prose. An independent equation row built from inline formulas stays in its own paragraph without site-specific detection. Inline and `display: contents` wrappers do not split sentences.
+
+Whitespace follows the source CSS: normal HTML formatting whitespace is collapsed, while explicit `<br>` and preserved line breaks are restored independently of translation. Model-generated line breaks do not add paragraph spacing. Long equations can scroll within their paragraph. This preserves text structure, not the page’s complete styling or arbitrary layout.
+
 ## Lists in selection popups
 
 Unordered, ordered, and nested HTML lists retain their items in the translated popup, including when the list contains equations. Each paragraph or item is translated separately. Ordered lists retain their starting number, explicit item values, reversed order, and HTML numbering type. Selecting only part of a list keeps the selected items at their original numbers. Copying includes bullet or numeric markers. The popup exposes native list and list-item semantics to accessibility tools.
