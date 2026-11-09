@@ -56,13 +56,13 @@ Load `dist/` from `chrome://extensions` using **Load unpacked**, then download t
 
 ## Usage
 
-After enabling **Use on all websites** and downloading the model, select text on a supported page and click the translation icon. To allow sites individually instead, open Glosside from the toolbar on a page and choose **Always allow**. Opening Glosside also activates the current tab temporarily. Use **Translate this page** for whole-page translation, or the side panel for manual input. Whole-page translation is unavailable in panel-only mode.
+- **Selected text:** Select text on a web page or PDF and click the translation icon.
+- **Whole pages:** Choose **Translate this page**. Hover over translated text to see the original, or choose **Restore original** to undo.
+- **Manual input:** Open the side panel and enter text.
 
-Page translation replaces the displayed text. Hover over a translated passage to see its original, or choose **Restore original** to restore the page.
+PDFs use Chrome's standard viewer. Matched equations are preserved; unresolved parts remain as source text. Whole-document PDF translation and OCR are not supported.
 
-PDF selection translation uses Chrome's standard viewer. Positioning the popup near a PDF selection uses the debugger permission and displays Chrome's debugging notification. Disable native PDF positioning in settings to use the upper-right corner instead. PDF document translation and OCR are not supported.
-
-The native PDF popup preserves matched display and inline equations as images while translating the surrounding prose. Unique prose anchors and local formula comparisons support two-column text and inline formulas wrapped across lines, without requiring every extracted character in the selection to match. Numbered algorithm steps retain their line numbers. Inline equations stay inside a continuous translated sentence; their identifiers must be preserved exactly once or the passage remains in its original language. Nearby prose helps locate equations; equation-only selections can remain unresolved. Glosside retrieves the current PDF URL again with the site's granted access, then parses and renders it locally using bundled PDF.js. It omits credentials and does not follow redirects. Unmatched equations, unavailable PDFs, and uncertain mathematical text remain in the original language. Inline images use the PDF text baseline and a transparent background. Long display equations scroll horizontally within the popup; copying uses the equation's original extracted text.
+PDF popup positioning triggers Chrome's debugging notification. Disable it in settings to use a corner popup instead.
 
 See [supported environments and limitations](docs/supported-environments.md).
 
