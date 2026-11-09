@@ -1,6 +1,6 @@
 # Licenses and Attribution
 
-Last updated: November 9, 2026
+Last updated: November 10, 2026
 
 **Built with PLaMo.**
 
@@ -20,19 +20,32 @@ Glosside uses **PLaMo 3 Translate 0.8B**, distributed by Preferred Networks, Inc
 Model weights are downloaded separately after the user accepts the model license; they are not included in the extension package.
 The model and materials covered by PFN's agreement are governed by the **PLaMo Community License Agreement**.
 
+The bundled agreement is the November 9, 2026 revision, transcribed from PFN’s official Japanese and English pages. Source URLs, the revision date, and SHA-256 checksums are recorded in the model manifest. Model weights and tokenizer revisions remain pinned separately.
+
 Read the complete bundled agreement in [English](../vendor/plamo-en.txt) or [Japanese](../vendor/plamo-ja.txt), and consult [PFN's license page](https://plamo.preferredai.jp/info/plamo-community-license-en) for current terms.
 The following is a summary of selected provisions, not a substitute for the agreement:
 
 - **Eligibility:** Article 2 specifies age or legal-capacity requirements and the alternative of consent by a legal guardian or representative.
-- **Commercial use:** Articles 1(9) and 3(3) define commercial purposes broadly, including product or service development and provision, and use within an organization. The community license requires prior registration with PFN and annual revenue or sales of the user or affiliated company not exceeding JPY 1 billion. If these conditions are not met, a separate commercial license from PFN is required. Distribution without a fee does not by itself establish that a use is non-commercial.
-- **Redistribution:** Article 4 requires a copy of the agreement, recipient compliance, the attribution “Built with PLaMo,” and the specified naming requirement for AI models created using model materials.
-- **Publishing output:** Article 5(1) requires clear identification of publicly distributed output as output of PLaMo or a derived model. Copying text from Glosside does not automatically add that identification. For example, identify it as “Translated with PLaMo 3 Translate via Glosside.”
-- **Training on output:** Article 5(2) treats models trained using the output as derived models subject to the agreement.
+- **Commercial use:** Articles 1(10) and 3(3) define commercial purposes broadly, including product or service development and provision, and use within an organization. The community license requires prior registration with PFN and annual revenue or sales of the user or affiliated company not exceeding JPY 1 billion. If these conditions are not met, a separate commercial license from PFN is required. Distribution without a fee does not by itself establish that a use is non-commercial.
+- **Redistributing models:** Article 4 applies when providing the model or a derived model to third parties. It requires a copy of the agreement, recipient compliance, the attribution “Built with PLaMo,” the specified naming requirement for AI models, and compliance with other applicable licenses.
+- **Publishing translations:** Article 1(6) defines conversion models, including models that solely translate input. Article 5(2) permits publication of their outputs without the attribution otherwise required by Article 5(1). If a translation forms all or a substantial part of a book, paper, or similar standalone long-form publication, indicate PLaMo’s use in a reasonable location such as the copyright page, acknowledgments, or the end. For example: “Translated with PLaMo 3 Translate via Glosside.” This attribution exception does not remove the separate notice obligation below.
+- **Training on output:** Article 5(3) treats models trained using output as derived models subject to the agreement.
+- **Providing output to others:** Article 5(4) requires a recipient-recognizable notice that models trained using the output are subject to this agreement. It covers providing or publicly releasing outputs, including datasets containing outputs; it is not limited to datasets intended for training.
+- **Input and third-party rights:** Articles 9(2) and 10(3) clarify responsibility for obtaining necessary rights, permissions, and consents, and preserve applicable third-party rights in input content and outputs.
 - **Use restrictions and responsibility:** Articles 6, 7, and 9 impose use restrictions and user responsibilities. PFN provides the model and outputs without the warranties listed in Article 7, which also prohibits using outputs as the sole evidence, evaluation, or opinion for specified high-stakes assessments.
 
 PFN provides a [commercial-use registration form](https://forms.gle/mTL8tBLrMYXKNZD56) and a [translation-model inquiry page](https://translate.preferredai.jp/llm/contact/).
 Neither Glosside's MIT license nor this notice grants an exemption from PFN's terms or represents that PFN registration has been completed for a particular user or use.
 Rights in source documents and other third-party content must also be respected.
+
+### Sharing from Glosside
+
+Ordinary copy returns only the translation. Ordinary text export retains its existing source/translation format; neither includes the Article 5(4) training-use notice.
+For external sharing, expand **Publishing and sharing** in the text translator or side panel, or in the selection popup’s additional actions, and choose **Copy with notice** or **Save with notice**.
+These actions include only the translated text (with original formula text where applicable), a completion warning when needed, PLaMo attribution, a Japanese/English training-use notice, and the official license links. They do not include the separate source-text field.
+The notice can be previewed before copying or saving. Nothing is sent automatically.
+If you use ordinary copy or another sharing method, provide the required notice separately in a way recipients can recognize. For long-form publications, place the attribution appropriately in the publication as well.
+The helper text addresses these notice and attribution requirements; it does not replace the full agreement or grant rights in third-party source material.
 
 ## 3. Third-party software notices
 

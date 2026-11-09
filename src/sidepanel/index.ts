@@ -4,6 +4,7 @@ import { makeRequest } from '../shared/protocol';
 import { explain, errorCode } from '../shared/errors';
 import { terminal, type TranslationEvent } from '../shared/types';
 import { copy, download, status, byId as $ } from '../ui/dom';
+import { shareTools } from '../ui/share-tools';
 import { modelLabel } from '../ui/model-label';
 const source = $<HTMLTextAreaElement>('source'),
   output = $('result'),
@@ -12,6 +13,8 @@ let active = '',
   version = 0,
   lastPending = '',
   finished = false;
+const sharing = shareTools(() => ({ text: output.textContent ?? '', complete: finished }), 'ja');
+$('share-container').append(sharing.element);
 const guard = (fn: () => Promise<unknown>) => void fn().catch((e) => status(explain(errorCode(e))));
 client.onSettings = (s) => {
   if (!document.hidden) client.prepare();
@@ -36,6 +39,7 @@ source.addEventListener('input', () => {
   $<HTMLButtonElement>('copy').disabled = true;
   $<HTMLButtonElement>('export').disabled = true;
   finished = false;
+  sharing.update();
 });
 async function translate() {
   reset();
@@ -52,6 +56,7 @@ async function translate() {
   };
   output.textContent = '';
   finished = false;
+  sharing.update();
   $<HTMLButtonElement>('copy').disabled = true;
   $<HTMLButtonElement>('export').disabled = true;
   status('処理待ち');
@@ -71,6 +76,7 @@ async function translate() {
       $<HTMLButtonElement>('cancel').hidden = true;
       finished = e.type === 'complete';
     }
+    sharing.update();
     $<HTMLButtonElement>('copy').disabled = !output.textContent;
     $<HTMLButtonElement>('export').disabled = !output.textContent;
   });
@@ -78,6 +84,8 @@ async function translate() {
 $('translate').onclick = () => guard(translate);
 $('cancel').onclick = () => {
   reset();
+  finished = false;
+  sharing.update();
   status('翻訳を中止しました。');
 };
 $('clear').onclick = () => {
@@ -85,6 +93,8 @@ $('clear').onclick = () => {
   source.value = '';
   output.textContent = '';
   $('count').textContent = '0 / 16,000文字';
+  finished = false;
+  sharing.update();
   status('消去しました。');
   $<HTMLButtonElement>('copy').disabled = true;
   $<HTMLButtonElement>('export').disabled = true;
@@ -144,4 +154,7 @@ async function pending() {
 }
 client.onPending = () => guard(pending);
 guard(pending);
-addEventListener('pagehide', () => client.close());
+addEventListener('pagehide', () => {
+  client.close();
+  sharing.dispose();
+});

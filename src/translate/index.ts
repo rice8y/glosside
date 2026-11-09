@@ -6,6 +6,8 @@ import { byId as $, copy, download } from '../ui/dom';
 import { localizePage, t, type MessageKey } from '../ui/locale';
 import { explainSettingsError as explain, settingsModelLabel } from '../options/messages';
 
+import { shareTools } from '../ui/share-tools';
+
 localizePage();
 const source = $<HTMLTextAreaElement>('source');
 const output = $('result');
@@ -37,6 +39,8 @@ function configurationKey() {
   return JSON.stringify([s.sourceLanguage, s.targetLanguage, s.japaneseForm, s.glossary]);
 }
 let model: ModelState = { state: 'CHECKING' };
+const sharing = shareTools(() => ({ text: output.textContent ?? '', complete }));
+$('share-container').append(sharing.element);
 const local = new Set<string>();
 const fields = {
   'source-lang': 'sourceLanguage',
@@ -67,6 +71,7 @@ function modelReady() {
   );
 }
 function update() {
+  sharing.update();
   const length = source.value.length;
   $('count').textContent = t('{count} / 16,000 characters', { count: length.toLocaleString() });
   $('count').dataset.error = String(length > 16000);
@@ -264,5 +269,6 @@ addEventListener('visibilitychange', () => {
 addEventListener('pagehide', () => {
   cancel();
   client.close();
+  sharing.dispose();
 });
 update();

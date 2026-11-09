@@ -74,4 +74,5 @@ Source text and translations are not sent to a translation server. See the [priv
 
 Glosside's own code is licensed under the [MIT License](LICENSE). See [third-party notices](docs/license-notices.md) for dependency licenses.
 
-Built with PLaMo. The model and its outputs are covered by the [PLaMo Community License](vendor/plamo-en.txt).
+Built with PLaMo. The model and its outputs are covered by the [PLaMo Community License](vendor/plamo-en.txt), revised November 9, 2026.
+For translations you provide to others, use **Publishing and sharing → Copy with notice / Save with notice**, or provide the required training-use notice separately. Ordinary copy remains text-only. See [publication and sharing terms](docs/license-notices.md).

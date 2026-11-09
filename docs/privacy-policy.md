@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Last updated: November 8, 2026
+Last updated: November 10, 2026
 
 ## 1. Publisher and scope
 
@@ -82,7 +82,8 @@ For content you do not want to display on a page, enable **Show translations onl
 ## 6. Exports, diagnostics, and deletion
 
 Copying a translation places it on the system clipboard.
-Exporting a translation saves a file containing the source and translated text.
+Ordinary text export saves a file containing the source and translated text.
+The optional **Copy with notice** and **Save with notice** actions include the translation and a PLaMo attribution/training-use notice, without the separate source-text field. Formula text retained within the translation is included. These actions do not automatically send anything to another person or service.
 These user-created copies remain outside extension storage; deleting extension data does not delete files or clipboard contents.
 
 Diagnostic export is manual and creates a local JSON file.

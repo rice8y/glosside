@@ -1,5 +1,6 @@
 import { readFile, writeFile, mkdir, cp } from 'node:fs/promises';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { Marked } from 'marked';
 
 const documents = [
@@ -34,6 +35,12 @@ const escape = (value) =>
     .replaceAll('"', '&quot;');
 
 export async function buildDocuments(out, icon) {
+  const model = JSON.parse(await readFile('vendor/model-manifest.json', 'utf8'));
+  for (const lang of ['ja', 'en']) {
+    const license = await readFile(`vendor/plamo-${lang}.txt`);
+    if (createHash('sha256').update(license).digest('hex') !== model.licenseSources[lang].sha256)
+      throw Error(`Review the retained PLaMo license: ${lang}`);
+  }
   // Retained notices must match the packages whose code is actually bundled.
   for (const [retained, source] of [
     ['vendor/licenses/wllama.txt', 'node_modules/@wllama/wllama/LICENCE'],

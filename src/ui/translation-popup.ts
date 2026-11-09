@@ -1,3 +1,4 @@
+import { shareTools } from './share-tools';
 import type { TranslationEvent } from '../shared/types';
 import { translationStatus } from './translation-status';
 import { el, button, copy } from './dom';
@@ -38,6 +39,8 @@ export class TranslationPopup {
   private copyButton: HTMLButtonElement;
   private copyTimer?: ReturnType<typeof setTimeout>;
   private disposed = false;
+  private complete = false;
+  private sharing: ReturnType<typeof shareTools>;
 
   constructor(data: PopupText, actions: PopupActions) {
     const state = this.state,
@@ -95,6 +98,13 @@ export class TranslationPopup {
         button('閉じる', actions.close, { 'aria-label': '翻訳を閉じる' }),
       ),
     );
+    this.sharing = shareTools(
+      () => ({ text: this.copyText, complete: this.complete }),
+      'ja',
+      'https://plamo.preferredai.jp/info/plamo-community-license-ja',
+    );
+    tools.append(this.sharing.element);
+    this.sharing.element.addEventListener('toggle', () => actions.position());
     // Keep expanded controls in view even when the translation fills the scroll area.
     const body = el('div', { class: 'body' }, tools, output, state);
     let readingScrollTop = 0;
@@ -139,6 +149,8 @@ export class TranslationPopup {
       this.output.textContent = e.text;
       this.copyText = e.text;
     }
+    this.complete = e.type === 'complete';
+    this.sharing.update();
     this.copyButton.disabled = !this.copyText;
     this.state.classList.toggle('quiet', e.type === 'complete' && !e.warnings?.length);
     this.state.textContent =
@@ -195,6 +207,7 @@ export class TranslationPopup {
               // The copy representation must follow the visible fallback too.
               part.runs = [{ kind: 'text', text: part.source }];
               this.copyText = pdfPlainText(parts);
+              this.sharing.update();
               this.state.classList.remove('quiet');
               this.state.textContent = '数式画像を表示できないため、この文は原文を表示しています。';
             },
@@ -254,6 +267,7 @@ export class TranslationPopup {
   }
   dispose() {
     this.disposed = true;
+    this.sharing.dispose();
     clearTimeout(this.copyTimer);
     this.output.replaceChildren();
     this.copyText = '';

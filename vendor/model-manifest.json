@@ -5,7 +5,7 @@
   "bytes": 573123200,
   "sha256": "923b2f28a9856de1b8b3b610a7e59ded0b14d007466fd5dd526e6a9ecaadafdd",
   "runtimeABI": "wllama-3.8.1-plamo3-simd-v3",
-  "licenseRevision": "cc8e88169807d5a272e8ff06db12eb0129b67f81",
+  "licenseRevision": "2026-11-09",
   "tokenizerRevision": "cc8e88169807d5a272e8ff06db12eb0129b67f81",
   "legacy": [
     {
@@ -13,5 +13,15 @@
       "bytes": 573116288,
       "sha256": "3dbb09295bfd3350231ba0dba92bc72cb14111ef1b034e37dad39d581bd86b9c"
     }
-  ]
+  ],
+  "licenseSources": {
+    "ja": {
+      "url": "https://plamo.preferredai.jp/info/plamo-community-license-ja",
+      "sha256": "e2ca7f8220fc496bd9aeb3679f9cff8244e6dab1bca234648b2e05a7b9f20e27"
+    },
+    "en": {
+      "url": "https://plamo.preferredai.jp/info/plamo-community-license-en",
+      "sha256": "b23696422aa50d56bc94f26e6b35c05b849653ecb3a9873f7e9eedfecf887d30"
+    }
+  }
 }

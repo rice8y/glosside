@@ -185,5 +185,15 @@
   "Translating…": "翻訳中…",
   "Translation copied": "訳文をコピーしました",
   "Could not copy. Select the translation and copy it manually.": "コピーできませんでした。訳文を選択して手動でコピーしてください。",
-  "Incomplete translation": "未完了の訳文"
+  "Incomplete translation": "未完了の訳文",
+  "Publishing and sharing": "公開・共有するとき",
+  "Copy with notice": "通知付きでコピー",
+  "Save with notice": "通知付きで保存",
+  "Copied with notice": "通知付きでコピーしました",
+  "Saved with notice": "通知付きファイルを保存しました",
+  "Could not copy. Try saving the text file instead.": "コピーできませんでした。通知付きで保存をお試しください。",
+  "When sharing a translation with others, include the training-use notice. Plain copy and save do not include it.": "訳文を第三者に渡すときは、学習利用に関する通知を添えてください。通常のコピー・保存には、この通知は含まれません。",
+  "For a book, paper, or similar long-form publication substantially using the translation, also credit PLaMo in an appropriate location.": "書籍・論文などの全部または実質的な部分に訳文を使う場合は、奥付・謝辞などにもPLaMoの利用を明記してください。",
+  "License details": "ライセンスの詳細",
+  "Notice to include": "追加する通知"
 }
