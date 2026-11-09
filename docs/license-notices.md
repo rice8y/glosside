@@ -1,6 +1,6 @@
 # Licenses and Attribution
 
-Last updated: November 7, 2026
+Last updated: November 9, 2026
 
 **Built with PLaMo.**
 
@@ -39,20 +39,24 @@ Rights in source documents and other third-party content must also be respected.
 The following notices accompany components used in the packaged extension and its inference runtime.
 Each linked file preserves the upstream copyright and license text; those texts govern the corresponding material.
 
-| Component                                                                                    | Copyright / attribution                                                         | License or notice                                                                           |
-| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| wllama 3.8.1                                                                                 | © 2024 Xuan Son NGUYEN                                                          | [MIT](../vendor/licenses/wllama.txt)                                                        |
-| llama.cpp / ggml                                                                             | © 2023–2026 The ggml authors                                                    | [MIT](../vendor/runtime/llama-LICENSE)                                                      |
-| hash-wasm 4.12.0                                                                             | © 2020 Dani Biró                                                                | [MIT and upstream notices](../vendor/licenses/hash-wasm.txt)                                |
-| SHA-256 implementation used by hash-wasm                                                     | © 2010 Aleksey Kravchenko; modified by Dani Biró                                | [Permissive license and disclaimer](../vendor/licenses/hash-wasm-sha256.txt)                |
-| Emscripten runtime support                                                                   | Emscripten authors and identified contributors                                  | [MIT / University of Illinois-NCSA and included notices](../vendor/licenses/emscripten.txt) |
-| musl C library                                                                               | © 2005–2020 Rich Felker and contributors; additional attributions in the notice | [MIT and component notices](../vendor/licenses/musl.txt)                                    |
-| Dawn WebGPU C++ bindings                                                                     | The Dawn & Tint Authors                                                         | [BSD 3-Clause](../vendor/licenses/dawn.txt)                                                 |
-| Emscripten WebGPU support distributed with Dawn                                              | Emscripten authors                                                              | [MIT / University of Illinois-NCSA](../vendor/licenses/emdawnwebgpu.txt)                    |
-| Embedded llama.cpp libraries: JSON for Modern C++, stb_image, miniaudio, SHA-256, and xxHash | Authors identified in the component notices                                     | [MIT, BSD, public-domain and alternative terms](../vendor/licenses/llama-components.txt)    |
-| LLVM libc++, libc++abi, and compiler-rt                                                      | LLVM Project contributors and identified authors                                | [Apache 2.0 with LLVM Exceptions and retained notices](../vendor/licenses/llvm-runtime.txt) |
-| musl component-specific notices                                                              | Sun Microsystems, Arm Limited, and other identified authors                     | [Additional source notices](../vendor/licenses/musl-components.txt)                         |
+| Component                                                                                    | Copyright / attribution                                                         | License or notice                                                                                                       |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| PDF.js 6.5.438                                                                               | Mozilla Foundation and PDF.js contributors                                      | [Apache 2.0](../vendor/licenses/pdfjs.txt); bundled CMap, font, codec and color-management notices accompany the assets |
+| wllama 3.8.1                                                                                 | © 2024 Xuan Son NGUYEN                                                          | [MIT](../vendor/licenses/wllama.txt)                                                                                    |
+| llama.cpp / ggml                                                                             | © 2023–2026 The ggml authors                                                    | [MIT](../vendor/runtime/llama-LICENSE)                                                                                  |
+| hash-wasm 4.12.0                                                                             | © 2020 Dani Biró                                                                | [MIT and upstream notices](../vendor/licenses/hash-wasm.txt)                                                            |
+| SHA-256 implementation used by hash-wasm                                                     | © 2010 Aleksey Kravchenko; modified by Dani Biró                                | [Permissive license and disclaimer](../vendor/licenses/hash-wasm-sha256.txt)                                            |
+| Emscripten runtime support                                                                   | Emscripten authors and identified contributors                                  | [MIT / University of Illinois-NCSA and included notices](../vendor/licenses/emscripten.txt)                             |
+| musl C library                                                                               | © 2005–2020 Rich Felker and contributors; additional attributions in the notice | [MIT and component notices](../vendor/licenses/musl.txt)                                                                |
+| Dawn WebGPU C++ bindings                                                                     | The Dawn & Tint Authors                                                         | [BSD 3-Clause](../vendor/licenses/dawn.txt)                                                                             |
+| Emscripten WebGPU support distributed with Dawn                                              | Emscripten authors                                                              | [MIT / University of Illinois-NCSA](../vendor/licenses/emdawnwebgpu.txt)                                                |
+| Embedded llama.cpp libraries: JSON for Modern C++, stb_image, miniaudio, SHA-256, and xxHash | Authors identified in the component notices                                     | [MIT, BSD, public-domain and alternative terms](../vendor/licenses/llama-components.txt)                                |
+| LLVM libc++, libc++abi, and compiler-rt                                                      | LLVM Project contributors and identified authors                                | [Apache 2.0 with LLVM Exceptions and retained notices](../vendor/licenses/llvm-runtime.txt)                             |
+| musl component-specific notices                                                              | Sun Microsystems, Arm Limited, and other identified authors                     | [Additional source notices](../vendor/licenses/musl-components.txt)                                                     |
 
+The build modifies PDF.js 6.5.438 to export the embedded Type1/CFF glyph names and their Unicode values with font metadata.
+The patch in `scripts/pdf-worker.mjs` reuses the upstream font parser and glyph-name mapping, preserves the original rendering paths, and fails the build if its insertion points change.
+The generated worker includes a modification notice and retains the upstream license notice.
 The build modifies wllama worker startup to use static extension resources and removes CDN runtime loading.
 The vendored llama.cpp runtime includes the PLaMo tokenizer compatibility patch recorded in its manifest.
 These modifications retain upstream notices.

@@ -2,6 +2,18 @@ import type { TranslationEvent } from '../shared/types';
 import { translationStatus } from './translation-status';
 import { el, button, copy } from './dom';
 import { icon, copyIcon } from './icons';
+import { pdfPlainText, type PdfPart, type PdfImage } from '../shared/pdf-equations';
+
+function imageElement(image: HTMLImageElement, data: PdfImage): HTMLElement {
+  if (!data.lightData) return image;
+  image.classList.add('colored-equation');
+  return el(
+    'picture',
+    { class: 'equation-picture' },
+    el('source', { media: '(forced-colors: active)', srcset: data.lightData }),
+    image,
+  );
+}
 
 interface PopupText {
   originalText: string;
@@ -21,7 +33,8 @@ interface PopupActions {
 export class TranslationPopup {
   readonly element: HTMLElement;
   private state = el('p', { class: 'state', role: 'status' }, '準備中');
-  private output = el('p', { class: 'output', 'aria-live': 'polite' });
+  private output = el('div', { class: 'output', 'aria-live': 'polite' });
+  private copyText = '';
   private copyButton: HTMLButtonElement;
   private copyTimer?: ReturnType<typeof setTimeout>;
   private disposed = false;
@@ -57,7 +70,7 @@ export class TranslationPopup {
       '',
       () => {
         const attempt = ++copyAttempt;
-        void copy(output.textContent ?? '')
+        void copy(this.copyText)
           .then(() => copied(attempt, 'コピーしました'))
           .catch(() => copied(attempt, 'コピーできませんでした'));
       },
@@ -117,13 +130,108 @@ export class TranslationPopup {
     this.copyButton = copyButton;
   }
   update(e: TranslationEvent) {
-    if (e.text !== undefined) this.output.textContent = e.text;
-    this.copyButton.disabled = !this.output.textContent;
+    if (this.disposed) return;
+    if (e.parts) {
+      this.copyText = pdfPlainText(e.parts);
+      this.renderParts(e.parts);
+      this.copyButton.title = '訳文をコピー（数式は原文の文字列）';
+    } else if (e.text !== undefined) {
+      this.output.textContent = e.text;
+      this.copyText = e.text;
+    }
+    this.copyButton.disabled = !this.copyText;
     this.state.classList.toggle('quiet', e.type === 'complete' && !e.warnings?.length);
     this.state.textContent =
       e.type === 'complete' && e.warnings?.length ? e.warnings.join(' ') : translationStatus(e);
     if (e.type !== 'complete' && e.warnings?.length)
       this.state.textContent += '\n' + e.warnings.join(' ');
+  }
+  private renderParts(parts: PdfPart[]) {
+    this.output.replaceChildren();
+    for (const part of parts) {
+      if (part.kind === 'paragraph') {
+        const paragraph = el('div', { class: 'output-prose output-inline' });
+        for (const run of part.runs) {
+          if (run.kind === 'text') {
+            paragraph.append(document.createTextNode(run.text));
+            continue;
+          }
+          if (run.kind === 'original') {
+            paragraph.append(el('span', { class: 'inline-original' }, run.source));
+            continue;
+          }
+          const image = el('img', {
+            class: 'equation-image inline-equation',
+            src: run.image.data,
+            alt: run.source,
+            width: String(run.image.width),
+            height: String(run.image.height),
+            draggable: 'false',
+          });
+          image.style.width = run.image.widthEm + 'em';
+          image.style.verticalAlign = -(run.image.baselineEm ?? 0) + 'em';
+          image.addEventListener(
+            'error',
+            () => {
+              if (this.disposed || !this.output.contains(paragraph)) return;
+              paragraph.replaceWith(
+                el('div', { class: 'output-prose output-original' }, part.source),
+              );
+              // The copy representation must follow the visible fallback too.
+              part.runs = [{ kind: 'text', text: part.source }];
+              this.copyText = pdfPlainText(parts);
+              this.state.classList.remove('quiet');
+              this.state.textContent = '数式画像を表示できないため、この文は原文を表示しています。';
+            },
+            { once: true },
+          );
+          paragraph.append(imageElement(image, run.image));
+        }
+        this.output.append(paragraph);
+        continue;
+      }
+      if (part.kind !== 'equation') {
+        const text = part.kind === 'text' ? part.text : part.source;
+        if (text.trim())
+          this.output.append(
+            el(
+              'div',
+              { class: part.kind === 'original' ? 'output-prose output-original' : 'output-prose' },
+              text.trim(),
+            ),
+          );
+        continue;
+      }
+      const image = el('img', {
+        class: 'equation-image',
+        src: part.image.data,
+        alt: part.source,
+        width: String(part.image.width),
+        height: String(part.image.height),
+        draggable: 'false',
+      });
+      image.style.width = part.image.widthEm + 'em';
+      const figure = el(
+        'figure',
+        {
+          class: 'equation',
+          tabindex: '0',
+          'aria-label': '原文の数式（横にスクロールできます）',
+        },
+        imageElement(image, part.image),
+      );
+      image.addEventListener(
+        'error',
+        () => {
+          if (this.disposed || !this.output.contains(figure)) return;
+          figure.replaceWith(el('div', { class: 'output-prose output-original' }, part.source));
+          this.state.classList.remove('quiet');
+          this.state.textContent = '数式画像を表示できないため、この部分は原文を表示しています。';
+        },
+        { once: true },
+      );
+      this.output.append(figure);
+    }
   }
   showError(message: string) {
     this.state.classList.remove('quiet');
@@ -132,5 +240,7 @@ export class TranslationPopup {
   dispose() {
     this.disposed = true;
     clearTimeout(this.copyTimer);
+    this.output.replaceChildren();
+    this.copyText = '';
   }
 }

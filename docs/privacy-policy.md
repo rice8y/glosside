@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Last updated: November 7, 2026
+Last updated: November 8, 2026
 
 ## 1. Publisher and scope
 
@@ -19,7 +19,8 @@ It does not include advertising, analytics, or automatic telemetry.
 On permitted pages, Glosside accesses the displayed document and selection to provide translation controls and extract text.
 It uses tab identifiers, frame information, URLs, and website permission patterns to route requests and enforce site access.
 It does not maintain a browsing-history database.
-For PDFs, the file remains in Chrome's viewer; Glosside reads selected text and does not separately download or retain the PDF file.
+PDFs remain displayed in Chrome's viewer. For selections in the native PDF popup, Glosside may retrieve the current PDF URL again using the site's granted access to locate and render display and inline equations locally. Inline equations are represented by temporary identifiers during local translation; the equation images and PDF bytes are not sent to a translation service.
+This temporary copy and its parsed text are held in memory during preparation, not written to extension file storage. Extracted equation images remain with the displayed result until it is closed or replaced.
 
 The publisher does not receive or review locally processed content through the extension.
 Glosside does not sell user data, use it for advertising, or send it for model training.
@@ -37,6 +38,7 @@ Information accessed through Chrome APIs is used only to provide the extension's
 | Translation result cache                                         | Held in memory and scoped to the requesting client/document                                                                                | Entries expire after ten minutes and are removed by periodic cleanup; they can be evicted earlier, cleared in settings, or removed when the client connection expires            |
 | Context-menu selection                                           | Temporarily placed in browser-session storage for delivery to the side panel                                                               | Eligible for delivery for two minutes; removed after consumption or replaced by the next selection. Unconsumed text can remain in session storage until the browser session ends |
 | PDF positioning state                                            | Pointer coordinates and viewport information in memory; per-tab cancellation flags in session storage                                      | Tracking state ends when detached; cancellation flags are removed on explicit reactivation, tab closure, or session end                                                          |
+| PDF equation preparation and images                              | A temporary PDF copy and parsed text in memory; equation images in the result UI                                                           | Parser resources are released after preparation or cancellation; images are released when the popup closes or is replaced                                                        |
 | Device optimization profile                                      | Local processing settings, sample timings, model/runtime identifiers, user-agent string, reported CPU core count, and isolation capability | Kept until replaced, reset with settings, or removed with the extension                                                                                                          |
 
 Device optimization uses built-in sample text, not page content.
@@ -50,6 +52,8 @@ These services receive connection information such as your IP address, the reque
 The download request omits credentials and referrer information and contains no translation text or glossary content.
 Downloaded weights are checked against the expected SHA-256 hash before use.
 The provider's handling of connection data is described in the [Hugging Face Privacy Policy](https://huggingface.co/privacy).
+
+For equation preservation in the native PDF popup, Glosside can make an additional GET request to the current HTTP(S) PDF URL. That website receives ordinary connection information and the requested URL, which may itself contain identifiers or access tokens. The request omits cookies, other browser credentials, and referrer information, follows no redirects, and includes no selection, translation, or glossary text. The PDF is parsed and rendered on your device. If access, alignment, or rendering fails, the affected part remains as original text. Chrome's normal HTTP caching may apply separately from extension storage.
 
 Opening external links, including the project repository, license pages, and support issues, connects your browser to those services.
 Their own privacy policies apply to those visits.

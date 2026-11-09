@@ -93,8 +93,38 @@ section::before {
   scrollbar-width: thin;
   scrollbar-color: #68788e transparent;
 }
-.output { margin: 0; font-size: 14px; line-height: 1.42; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.output { margin: 0; font-size: 14px; font-weight: 400; -webkit-font-smoothing: antialiased; line-height: 1.42; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
 .output:empty { display: none; }
+.output-prose { white-space: pre-wrap; }
+.output-prose + .output-prose { margin-top: 10px; }
+.equation {
+  margin: 10px 0;
+  padding: 4px 0 7px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #68788e transparent;
+  white-space: normal;
+  font-size: 16px;
+}
+.equation-image {
+  display: block;
+  max-width: none;
+  height: auto;
+  margin-inline: auto;
+  filter: invert(1) brightness(.96);
+}
+.output-inline { white-space: normal; }
+.inline-original { white-space: pre-wrap; }
+.inline-equation { display: inline-block; max-width: 100%; margin: 0 .06em; object-fit: contain; }
+.equation-picture { display: contents; }
+.colored-equation { filter: none; }
+.equation:focus-visible { outline: 1px solid #c0a9ff; outline-offset: 2px; border-radius: 2px; }
+@media (forced-colors: active) {
+  .equation, .inline-equation { background: white; forced-color-adjust: none; }
+  .equation-image { filter: none; }
+}
 .state { white-space: pre-line; margin: 4px 0 0; font-size: 12px; line-height: 1.5; color: #c0ccdc; overflow-wrap: anywhere; }
 .state.quiet { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .tools { margin: 4px 0 12px; padding: 0 0 12px; border-bottom: 1px solid #ffffff20; }

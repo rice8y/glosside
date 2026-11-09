@@ -14,6 +14,7 @@ const licenses = [
   ['vendor/runtime/llama-LICENSE', 'vendor/licenses/llama-cpp.txt'],
   ...[
     'wllama',
+    'pdfjs',
     'hash-wasm',
     'hash-wasm-sha256',
     'emscripten',
@@ -36,6 +37,7 @@ export async function buildDocuments(out, icon) {
   // Retained notices must match the packages whose code is actually bundled.
   for (const [retained, source] of [
     ['vendor/licenses/wllama.txt', 'node_modules/@wllama/wllama/LICENCE'],
+    ['vendor/licenses/pdfjs.txt', 'node_modules/pdfjs-dist/LICENSE'],
     ['vendor/licenses/hash-wasm.txt', 'node_modules/hash-wasm/LICENSE'],
   ]) {
     if ((await readFile(retained, 'utf8')) !== (await readFile(source, 'utf8')))

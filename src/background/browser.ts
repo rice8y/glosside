@@ -12,7 +12,7 @@ export function ensureHost(settings: () => Promise<Settings>) {
       await chrome.offscreen.createDocument({
         url: 'offscreen/index.html',
         reasons: [chrome.offscreen.Reason.WORKERS],
-        justification: '端末内の翻訳推論Workerとモデル管理を所有するため',
+        justification: '端末内の翻訳推論Worker、PDF解析Workerと数式描画を管理するため',
       });
       const s = await settings();
       const { deviceProfiles = {} } = await chrome.storage.local.get('deviceProfiles');

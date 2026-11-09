@@ -36,6 +36,7 @@ export interface TranslationEvent {
   code?: string;
   reason?: string;
   warnings?: string[];
+  parts?: import('./pdf-equations').PdfPart[];
 }
 export interface ModelState {
   state: string;

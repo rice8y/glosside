@@ -15,13 +15,16 @@
     "unlimitedStorage",
     "debugger"
   ],
-  "optional_host_permissions": ["https://*/*", "http://*/*"],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
   "background": {
     "service_worker": "background/service-worker.js",
     "type": "module"
   },
   "action": {
-    "default_title": "Glosside — 翻訳と設定",
+    "default_title": "Glosside \u2014 \u7ffb\u8a33\u3068\u8a2d\u5b9a",
     "default_popup": "popup/index.html"
   },
   "side_panel": {
@@ -36,11 +39,11 @@
       "suggested_key": {
         "default": "Alt+Shift+T"
       },
-      "description": "選択した文字列を翻訳"
+      "description": "\u9078\u629e\u3057\u305f\u6587\u5b57\u5217\u3092\u7ffb\u8a33"
     }
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; worker-src 'self'; base-uri 'none'; connect-src 'self' blob: https://huggingface.co https://*.hf.co; img-src 'self' blob: data:; font-src 'self' data:;"
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; worker-src 'self'; base-uri 'none'; connect-src 'self' blob: https: http:; img-src 'self' blob: data:; font-src 'self' data:;"
   },
   "cross_origin_embedder_policy": {
     "value": "require-corp"

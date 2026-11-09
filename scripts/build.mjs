@@ -4,6 +4,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { deflateSync } from 'node:zlib';
 import { buildDocuments } from './documents.mjs';
+import { pdfWorkerSource } from './pdf-worker.mjs';
 const releaseBuild = process.argv.includes('--release');
 const out = path.resolve('dist');
 const target = 'chrome151';
@@ -105,6 +106,19 @@ const entries = Object.fromEntries(
     'glossary/index',
   ].map((p) => [p, 'src/' + p + '.ts']),
 );
+// PDF.js stays local; no remote code or replacement PDF viewer is shipped.
+await mkdir(`${out}/vendor/pdfjs`, { recursive: true });
+await build({
+  stdin: { contents: await pdfWorkerSource(), sourcefile: 'pdf.worker.mjs', loader: 'js' },
+  outfile: `${out}/vendor/pdfjs/pdf.worker.min.mjs`,
+  format: 'esm',
+  target,
+  minify: true,
+  legalComments: 'inline',
+});
+for (const name of ['cmaps', 'standard_fonts', 'wasm'])
+  await cp(`node_modules/pdfjs-dist/${name}`, `${out}/vendor/pdfjs/${name}`, { recursive: true });
+await cp('node_modules/pdfjs-dist/LICENSE', `${out}/vendor/pdfjs/LICENSE`);
 await build({
   entryPoints: entries,
   outbase: 'src',
@@ -237,6 +251,7 @@ await put(
       dependencies: pkg.dependencies,
       runtime: runtimeManifest,
       runtimePatch: runtimeManifest.abi,
+      pdfWorkerPatch: 'embedded-glyph-metadata-v1',
       model: JSON.parse(await read('vendor/model-manifest.json')),
       buildMode: releaseBuild ? 'release' : 'development',
     },

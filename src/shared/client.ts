@@ -8,6 +8,7 @@ import {
 } from './types';
 import { AppError } from './errors';
 import { extensionContextAlive } from './runtime-context';
+import { originalPdf, validPdfPlan, type PdfPlan } from './pdf-equations';
 export class Client {
   settings: Settings = { ...defaults };
   readonly id = crypto.randomUUID();
@@ -19,6 +20,7 @@ export class Client {
   private callbacks = new Map<string, (e: TranslationEvent) => void>();
   private sequences = new Map<string, number>();
   private submitted = new Map<string, number>();
+  private pdfJobs = new Map<string, { source: string; finish: (plan: PdfPlan) => void }>();
   onModel: (state: ModelState) => void = () => {};
   onSettings: (s: Settings) => void = () => {};
   onPending: () => void = () => {};
@@ -49,7 +51,10 @@ export class Client {
       this.port.onMessage.addListener((m) => {
         if (this.closed || this.port !== port) return;
         this.retry = 0;
-        if (m.type === 'settings') {
+        if (m.type === 'pdf-plan') {
+          const job = this.pdfJobs.get(m.id);
+          if (job) job.finish(validPdfPlan(m.plan, job.source) ? m.plan : originalPdf(job.source));
+        } else if (m.type === 'settings') {
           this.settings = m.settings;
           this.onSettings(m.settings);
         } else if (m.type === 'model') this.onModel(m.model);
@@ -84,6 +89,7 @@ export class Client {
         } catch {}
         if (this.port !== port || this.closed) return;
         this.port = undefined;
+        for (const job of this.pdfJobs.values()) job.finish(originalPdf(job.source));
         if (!extensionContextAlive()) {
           this.invalidate();
           return;
@@ -115,6 +121,26 @@ export class Client {
     this.lastPrepare = Date.now();
     this.send({ type: 'prepare' });
   }
+  preparePdf(source: string, signal: AbortSignal): Promise<PdfPlan> {
+    if (this.closed || signal.aborted) return Promise.resolve(originalPdf(source));
+    return new Promise((resolve) => {
+      const id = crypto.randomUUID();
+      const abort = () => {
+        this.send({ type: 'pdf-cancel', id });
+        finish(originalPdf(source));
+      };
+      const timer = setTimeout(abort, 23000);
+      const finish = (plan: PdfPlan) => {
+        clearTimeout(timer);
+        signal.removeEventListener('abort', abort);
+        this.pdfJobs.delete(id);
+        resolve(plan);
+      };
+      this.pdfJobs.set(id, { source, finish });
+      signal.addEventListener('abort', abort, { once: true });
+      this.send({ type: 'pdf-prepare', id, source });
+    });
+  }
   translate(r: Request, cb: (e: TranslationEvent) => void) {
     this.callbacks.set(r.requestId, cb);
     this.submitted.set(r.requestId, Date.now());
@@ -136,6 +162,12 @@ export class Client {
     clearTimeout(this.reconnect);
     clearInterval(this.lease);
     const port = this.port;
+    for (const [id, job] of this.pdfJobs) {
+      try {
+        port?.postMessage({ type: 'pdf-cancel', id });
+      } catch {}
+      job.finish(originalPdf(job.source));
+    }
     this.port = undefined;
     for (const id of this.callbacks.keys()) {
       try {

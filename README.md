@@ -62,6 +62,8 @@ Page translation replaces the displayed text. Hover over a translated passage to
 
 PDF selection translation uses Chrome's standard viewer. Positioning the popup near a PDF selection uses the debugger permission and displays Chrome's debugging notification. Disable native PDF positioning in settings to use the upper-right corner instead. PDF document translation and OCR are not supported.
 
+The native PDF popup preserves matched display and inline equations as images while translating the surrounding prose. Unique prose anchors and local formula comparisons support two-column text and inline formulas wrapped across lines, without requiring every extracted character in the selection to match. Numbered algorithm steps retain their line numbers. Inline equations stay inside a continuous translated sentence; their identifiers must be preserved exactly once or the passage remains in its original language. Nearby prose helps locate equations; equation-only selections can remain unresolved. Glosside retrieves the current PDF URL again with the site's granted access, then parses and renders it locally using bundled PDF.js. It omits credentials and does not follow redirects. Unmatched equations, unavailable PDFs, and uncertain mathematical text remain in the original language. Inline images use the PDF text baseline and a transparent background. Long display equations scroll horizontally within the popup; copying uses the equation's original extracted text.
+
 See [supported environments and limitations](docs/supported-environments.md).
 
 ## Privacy

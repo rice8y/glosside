@@ -1,6 +1,6 @@
 import { EventListeners } from './listeners';
 import { Client } from '../shared/client';
-import { makeRequest } from '../shared/protocol';
+import { makeRequest, checkText } from '../shared/protocol';
 import { explain, errorCode } from '../shared/errors';
 import { terminal, type Mode } from '../shared/types';
 import { el, button, isExtensionNode } from './dom';
@@ -10,6 +10,8 @@ import { brandIcon } from './brand';
 import { preparePdfText } from '../native-pdf/reflow';
 import { measure } from '../shared/metrics';
 import { paragraphText } from '../content/paragraph';
+import { mayContainMath, originalPdf } from '../shared/pdf-equations';
+import { translatePdfPlan } from '../native-pdf/translate-plan';
 export interface SelectionOptions {
   surface: 'html' | 'native-selection';
   epoch: () => string;
@@ -29,6 +31,7 @@ export class SelectionUI {
   private placement?: 'above' | 'below';
   private mode: Mode = 'selection';
   private active?: string;
+  private pdfAbort?: AbortController;
   private pinned = false;
   private composing = false;
   private dragging = false;
@@ -200,14 +203,19 @@ export class SelectionUI {
   private async translate() {
     const clicked = performance.now();
     const version = this.version;
+    this.pdfAbort?.abort();
+    const pdfSource = this.translationOverride ?? this.text;
+    const protectMath = this.options.surface === 'native-selection';
     this.result?.dispose();
     this.result = undefined;
     this.showButton(true);
     const reflowStart = performance.now();
     const prepared =
-      this.options.surface === 'html' || this.translationOverride !== undefined
-        ? { text: this.translationOverride ?? this.text, edits: undefined }
-        : preparePdfText(this.text);
+      protectMath && mayContainMath(pdfSource)
+        ? { text: pdfSource, edits: undefined }
+        : this.options.surface === 'html' || this.translationOverride !== undefined
+          ? { text: this.translationOverride ?? this.text, edits: undefined }
+          : preparePdfText(this.text);
     if (this.options.surface !== 'html') measure('pdfReflowMs', reflowStart);
     const popup = (this.result = new TranslationPopup(
       {
@@ -241,6 +249,40 @@ export class SelectionUI {
       this.position();
     };
     try {
+      if (protectMath) {
+        checkText(pdfSource);
+        const controller = (this.pdfAbort = new AbortController());
+        let plan;
+        try {
+          plan = await this.client.preparePdf(pdfSource, controller.signal);
+        } catch {
+          plan = originalPdf(pdfSource);
+        }
+        if (version !== this.version || controller.signal.aborted) return;
+        if (!(plan.parts.length === 1 && plan.parts[0].kind === 'text')) {
+          const event = await translatePdfPlan(
+            plan,
+            this.client,
+            {
+              sessionId: this.client.id,
+              documentEpoch: this.options.epoch(),
+              selectionVersion: version,
+              surface: 'native-selection',
+              mode: 'selection',
+              pinned: this.pinned,
+            },
+            controller.signal,
+            (id) => {
+              this.active = id;
+            },
+          );
+          if (version !== this.version || controller.signal.aborted) return;
+          popup.update(event);
+          reveal();
+          measure('clickToResultMs', clicked);
+          return;
+        }
+      }
       const r = await makeRequest(this.text, this.client.settings, {
         sessionId: this.client.id,
         documentEpoch: this.options.epoch(),
@@ -345,6 +387,8 @@ export class SelectionUI {
 
   close() {
     clearTimeout(this.timer);
+    this.pdfAbort?.abort();
+    this.pdfAbort = undefined;
     this.result?.dispose();
     this.result = undefined;
     this.version++;
