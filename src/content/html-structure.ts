@@ -1,6 +1,8 @@
 import type { HtmlRun } from './math-plan';
+import { tableStructure, tableText, type HtmlTable } from './html-table';
 
 export type HtmlBlock =
+  | HtmlTable
   | { kind: 'paragraph'; runs: HtmlRun[]; owner?: Element }
   | {
       kind: 'list';
@@ -32,23 +34,52 @@ function ordinal(list: Element, item: Element) {
   return value;
 }
 
-// Retain list ancestry and paragraph boundaries without cloning arbitrary page
-// markup. Each translated paragraph stays in its own original list item.
+// Retain semantic containers without cloning arbitrary page markup. Translated
+// paragraphs stay in their original list items and table cells.
 export function htmlStructure(runs: HtmlRun[]): HtmlBlock[] | undefined {
   const blocks: HtmlBlock[] = [];
-  let hasList = false;
-  for (const run of runs) {
-    if (run.kind === 'text' && run.boundary) continue;
+  const paths = runs.map((run) => {
     const node = run.kind === 'math' ? run.element : (run.node ?? run.element);
     const element = node instanceof Element ? node : node?.parentElement;
-    if (!element) continue;
     const path: Element[] = [];
-    for (let current: Element | null = element; current; current = current.parentElement)
-      if (current.localName === 'li' && current.parentElement?.matches('ul,ol'))
+    for (let current = element; current; current = current.parentElement)
+      if (
+        (current.localName === 'li' && current.parentElement?.matches('ul,ol')) ||
+        (current.matches('td,th,caption') && current.closest('table'))
+      )
         path.unshift(current);
+    return { element, path };
+  });
+  const selected = new Set(paths.flatMap(({ path }) => path));
+  for (const { element } of paths) {
+    const row = element?.closest('tr');
+    if (row) selected.add(row);
+  }
+  let hasStructure = false;
+  for (const [index, run] of runs.entries()) {
+    if (run.kind === 'text' && run.boundary) continue;
+    const { element, path } = paths[index];
+    if (!element) continue;
     let target = blocks;
     for (const item of path) {
-      hasList = true;
+      hasStructure = true;
+      if (item.localName !== 'li') {
+        const table = item.closest('table')!;
+        let block = target.at(-1);
+        if (block?.kind !== 'table' || block.element !== table) {
+          block = tableStructure(table, selected);
+          target.push(block);
+        }
+        if (item.localName === 'caption') target = block.caption;
+        else {
+          const cell = block.rows.flatMap((row) => row.cells).find((cell) => cell.element === item);
+          // Malformed overlapping spans may not have a consistent cell grid.
+          // Fall back to the ordinary text/math path rather than losing content.
+          if (!cell) return;
+          target = cell.blocks;
+        }
+        continue;
+      }
       const list = item.parentElement!;
       let block = target.at(-1);
       if (block?.kind !== 'list' || block.element !== list) {
@@ -72,7 +103,9 @@ export function htmlStructure(runs: HtmlRun[]): HtmlBlock[] | undefined {
       }
       target = entry.blocks;
     }
-    const owner = element.closest('p,div,li,dd,dt,blockquote,h1,h2,h3,h4,h5,h6') ?? undefined;
+    if (run.kind === 'text' && !run.text) continue;
+    const owner =
+      element.closest('p,div,li,td,th,caption,dd,dt,blockquote,h1,h2,h3,h4,h5,h6') ?? undefined;
     let paragraph = target.at(-1);
     if (
       run.kind === 'text' &&
@@ -87,12 +120,14 @@ export function htmlStructure(runs: HtmlRun[]): HtmlBlock[] | undefined {
     }
     paragraph.runs.push(run);
   }
-  return hasList ? blocks : undefined;
+  return hasStructure ? blocks : undefined;
 }
 
 export function structureText(blocks: HtmlBlock[], depth = 0): string {
   return blocks
     .map((block) => {
+      if (block.kind === 'table')
+        return tableText(block, (children) => structureText(children, depth));
       if (block.kind === 'paragraph')
         return block.runs
           .map((run) => (run.kind === 'text' ? run.text : run.source))
@@ -113,6 +148,11 @@ export function structureRuns(blocks: HtmlBlock[]): HtmlRun[] {
   return blocks.flatMap((block) =>
     block.kind === 'paragraph'
       ? [...block.runs, { kind: 'text' as const, text: '\n\n', boundary: true }]
-      : block.items.flatMap((item) => structureRuns(item.blocks)),
+      : block.kind === 'table'
+        ? [
+            ...structureRuns(block.caption),
+            ...block.rows.flatMap((row) => row.cells.flatMap((cell) => structureRuns(cell.blocks))),
+          ]
+        : block.items.flatMap((item) => structureRuns(item.blocks)),
   );
 }

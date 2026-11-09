@@ -121,6 +121,14 @@ section::before {
 .html-list li { padding-inline-start: .15em; margin: 6px 0; }
 .html-list .html-list { margin: 6px 0; }
 .html-list + .html-paragraph { margin-top: 10px; }
+.html-table-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; margin: 10px 0; scrollbar-width: thin; scrollbar-color: #68788e transparent; white-space: normal; }
+.html-table-scroll:focus-visible { outline: 2px solid #c0a9ff; outline-offset: -2px; }
+.html-table { border-collapse: collapse; width: 100%; font: inherit; text-align: left; }
+.html-table th, .html-table td { border: 1px solid #ffffff30; padding: 8px 10px; min-width: 8em; max-width: 22em; vertical-align: top; overflow-wrap: break-word; }
+.html-table th { background: #ffffff0a; font-weight: 600; }
+.html-table caption { text-align: left; margin-bottom: 8px; font-weight: 600; }
+.html-table .html-paragraph { white-space: pre-line; }
+.html-table .html-list { margin-block: 0; }
 .html-math { display: inline-block; vertical-align: baseline; white-space: nowrap; overflow-wrap: normal; }
 .html-math math { font-size: 1em; color: inherit; }
 .html-math img { display: inline-block; max-width: none; height: auto; vertical-align: middle; background: white; border-radius: 2px; padding: 1px; }

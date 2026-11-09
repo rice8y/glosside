@@ -74,6 +74,17 @@ export function htmlMathPlan(
       if (node.closest(EXCLUDED)) return;
       const style = getComputedStyle(node);
       if (style.display === 'none' || style.visibility === 'hidden') return;
+      if (node.matches('td,th,tr,caption')) {
+        const bounds = document.createRange();
+        bounds.selectNode(node);
+        if (
+          range.compareBoundaryPoints(Range.END_TO_START, bounds) >= 0 ||
+          range.compareBoundaryPoints(Range.START_TO_END, bounds) <= 0
+        )
+          return;
+        // Empty selected cells still occupy a position in the table.
+        runs.push({ kind: 'text', text: '', element: node });
+      }
       if (node.localName === 'br') {
         runs.push({ kind: 'text', text: '\n', element: node });
         return;
@@ -87,15 +98,20 @@ export function htmlMathPlan(
     }
   };
   visit(mathRoot(range.commonAncestorContainer) ?? range.commonAncestorContainer);
-  while (runs[0]?.kind === 'text' && !runs[0].node && !runs[0].text.trim()) runs.shift();
+  while (runs[0]?.kind === 'text' && !runs[0].node && !runs[0].element && !runs[0].text.trim())
+    runs.shift();
   while (runs.at(-1)?.kind === 'text') {
     const last = runs.at(-1) as Extract<HtmlRun, { kind: 'text' }>;
-    if (last.node || last.text.trim()) break;
+    if (last.node || last.element || last.text.trim()) break;
     runs.pop();
   }
   const blocks = htmlStructure(runs);
   if (!count && !blocks) return;
-  return { runs, source: htmlPlainText(runs), ...(blocks ? { blocks } : {}) };
+  return {
+    runs,
+    source: blocks ? structureText(blocks) : htmlPlainText(runs),
+    ...(blocks ? { blocks } : {}),
+  };
 }
 
 // Source edits can retain protected formulas when their original spelling is
@@ -144,12 +160,22 @@ export async function translateHtmlPlan(
   if (plan.blocks && init.mode !== 'page') {
     const warnings = new Set<string>();
     let complete = true;
-    let requestId = 'html-list';
+    let requestId = 'html-structure';
     const translateBlocks = async (blocks: HtmlBlock[]): Promise<HtmlBlock[]> => {
       const output: HtmlBlock[] = [];
       for (const block of blocks) {
         signal.throwIfAborted();
-        if (block.kind === 'list') {
+        if (block.kind === 'table') {
+          const caption = await translateBlocks(block.caption);
+          const rows = [];
+          for (const row of block.rows) {
+            const cells = [];
+            for (const cell of row.cells)
+              cells.push({ ...cell, blocks: await translateBlocks(cell.blocks) });
+            rows.push({ ...row, cells });
+          }
+          output.push({ ...block, caption, rows });
+        } else if (block.kind === 'list') {
           const items = [];
           for (const item of block.items)
             items.push({ ...item, blocks: await translateBlocks(item.blocks) });
@@ -258,6 +284,44 @@ export function renderHtmlMath(runs: HtmlRun[], blocks?: HtmlBlock[]): DocumentF
         paragraph.className = 'html-paragraph';
         paragraph.append(renderHtmlMath(block.runs));
         fragment.append(paragraph);
+      } else if (block.kind === 'table') {
+        const scroll = document.createElement('div');
+        scroll.className = 'html-table-scroll';
+        scroll.tabIndex = 0;
+        const table = document.createElement('table');
+        table.className = 'html-table';
+        if (block.caption.length) {
+          const caption = document.createElement('caption');
+          caption.append(renderHtmlMath([], block.caption));
+          table.append(caption);
+        }
+        let previous: Element | undefined;
+        let group: HTMLTableSectionElement | undefined;
+        for (const row of block.rows) {
+          if (row.group !== previous) {
+            group = document.createElement(
+              row.group.localName === 'thead'
+                ? 'thead'
+                : row.group.localName === 'tfoot'
+                  ? 'tfoot'
+                  : 'tbody',
+            );
+            table.append(group);
+            previous = row.group;
+          }
+          const tr = document.createElement('tr');
+          for (const cell of row.cells) {
+            const td = document.createElement(cell.header ? 'th' : 'td');
+            td.colSpan = cell.colSpan;
+            td.rowSpan = cell.rowSpan;
+            if (cell.scope) td.scope = cell.scope;
+            td.append(renderHtmlMath([], cell.blocks));
+            tr.append(td);
+          }
+          group!.append(tr);
+        }
+        scroll.append(table);
+        fragment.append(scroll);
       } else {
         const list = document.createElement(block.ordered ? 'ol' : 'ul');
         list.className = 'html-list';

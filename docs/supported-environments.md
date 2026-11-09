@@ -32,6 +32,10 @@ Input fields are excluded from automatic page translation; password fields are e
 
 Unordered, ordered, and nested HTML lists retain their items in the translated popup, including when the list contains equations. Each paragraph or item is translated separately. Ordered lists retain their starting number, explicit item values, reversed order, and HTML numbering type. Selecting only part of a list keeps the selected items at their original numbers. Copying includes bullet or numeric markers. The popup exposes native list and list-item semantics to accessibility tools.
 
+## Tables in selection popups
+
+HTML tables retain rows, columns, header cells, captions, row groups, and merged cells in the translated popup. Paragraphs in each selected cell are translated separately; lists and equations inside cells remain structured. Partial selections leave unselected cells blank to retain column positions. Wide tables scroll horizontally inside the popup and can be focused for keyboard scrolling. Copying uses tabs between columns and newlines between rows. Native table semantics remain available to accessibility tools. This applies to HTML tables, not tables drawn in images, canvas, or PDFs.
+
 ## Equations on web pages
 
 Selection and paragraph popups preserve MathML, MathJax (HTML or SVG), KaTeX, and images explicitly marked as equations. Inline formulas stay within the translated sentence; display equations remain separate and can scroll horizontally. A selection crossing part of a formula includes the complete formula. Visual output and accessibility MathML are treated as one equation. This includes accessibility copies stored beside the visible MathJax output. Native MathML exposes one structured equation in the accessibility tree; visual-only copies use one labelled math object.
