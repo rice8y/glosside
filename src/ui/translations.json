@@ -98,7 +98,7 @@
   "Model deleted.": "モデルを削除しました。",
   "Website access was not allowed. Click the extension toolbar icon to enable only the current tab.": "Webサイトへのアクセスが許可されませんでした。ツールバーの拡張アイコンで現在のタブだけを有効にできます。",
   "Website access enabled. Select text on a supported web page to see the translation icon.": "Webサイトへのアクセスを有効にしました。対応ページの文章を選択すると翻訳アイコンが表示されます。",
-  "Enabled on all websites.": "すべてのWebサイトで有効です。",
+  "All websites enabled": "すべてのサイトで有効",
   "Enabled on {count} saved sites.": "登録済みの{count}サイトで有効です。",
   "Not enabled for websites yet. Text selection will not show an icon until access is enabled.": "Webサイトへのアクセスは未許可です。許可するまで選択アイコンは表示されません。",
   "Remove": "削除",

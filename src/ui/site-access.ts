@@ -37,7 +37,7 @@ export function mountSiteAccess(reportError: (error: unknown) => void) {
     document.getElementById('access-intro')!.hidden = all;
     document.getElementById('access-alternative')!.hidden = all;
     state.textContent = all
-      ? t('Enabled on all websites.')
+      ? t('All websites enabled')
       : t('On websites you have not allowed, open Glosside from the toolbar before selecting text.');
     if (!list || !heading) return;
     const shown = all ? [] : allowed;

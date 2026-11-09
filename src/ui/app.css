@@ -393,6 +393,33 @@ details summary {
   width: 100%;
   margin: 14px 0 8px;
 }
+/* Granted access is a quiet status, rather than first-use guidance. */
+.access-onboarding.access-enabled,
+.settings-page section.access-onboarding.access-enabled {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.access-onboarding.access-enabled #access-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+.access-onboarding.access-enabled #access-state::before {
+  content: '';
+  flex: none;
+  width: 5px;
+  height: 9px;
+  margin: 0 3px;
+  border: solid currentColor;
+  border-width: 0 1.5px 1.5px 0;
+  transform: translateY(-1px) rotate(45deg);
+}
 .access-onboarding.access-enabled h2 {
   display: none;
 }
