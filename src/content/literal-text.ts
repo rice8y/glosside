@@ -14,7 +14,12 @@ export function literalRoot(node: Node): Element | undefined {
 
 // Read only the selected, visible text. Syntax highlighting is flattened to
 // literal text; page markup, handlers and hidden copy controls are not cloned.
-export function literalText(root: Element, range: Range, read: (node: Text) => string): string {
+export function literalText(
+  root: Element,
+  range: Range,
+  read: (node: Text) => string,
+  selected?: (node: Text) => boolean,
+): string {
   if (root.parentElement?.closest(EXCLUDED)) return '';
   for (let parent: Element | null = root; parent; parent = parent.parentElement) {
     const style = getComputedStyle(parent);
@@ -29,6 +34,7 @@ export function literalText(root: Element, range: Range, read: (node: Text) => s
   const visit = (node: Node): string => {
     if (!range.intersectsNode(node)) return '';
     if (node instanceof Text) {
+      if (selected && !selected(node)) return '';
       const text = read(node);
       return text.slice(
         node === range.startContainer ? range.startOffset : 0,

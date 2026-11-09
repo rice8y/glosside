@@ -35,6 +35,21 @@ function ordinal(list: Element, item: Element) {
   return value;
 }
 
+function numberedOrBulletedItem(item: Element): boolean {
+  const parent = item.parentElement;
+  if (item.localName !== 'li' || !parent?.matches('ul,ol')) return false;
+  if (
+    item.matches('[role="none"],[role="presentation"]') ||
+    parent.matches('[role="none"],[role="presentation"],[role="log"]')
+  )
+    return false;
+  const style = getComputedStyle(item);
+  // Applications use ol/li for message/card containers too. Reconstruct a list
+  // marker only when the page actually renders one; do not invent chat numbers.
+  if (style.display && !/(^|\s)list-item(\s|$)/.test(style.display)) return false;
+  return (style.listStyleType || getComputedStyle(parent).listStyleType) !== 'none';
+}
+
 // Retain semantic containers without cloning arbitrary page markup. Translated
 // paragraphs stay in their original list items and table cells.
 export function htmlStructure(runs: HtmlRun[]): HtmlBlock[] | undefined {
@@ -45,7 +60,7 @@ export function htmlStructure(runs: HtmlRun[]): HtmlBlock[] | undefined {
     const path: Element[] = [];
     for (let current = element; current; current = current.parentElement)
       if (
-        (current.localName === 'li' && current.parentElement?.matches('ul,ol')) ||
+        numberedOrBulletedItem(current) ||
         (current.matches('td,th,caption') && current.closest('table'))
       )
         path.unshift(current);

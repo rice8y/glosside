@@ -1,3 +1,4 @@
+import { selectionAccess, matchesNativeSelection } from './selection-content';
 import { htmlStructure, structureText, structureRuns, type HtmlBlock } from './html-structure';
 import { EXCLUDED } from './blocks';
 import { mathRoot, mathSource, blockMath } from './math-elements';
@@ -38,9 +39,11 @@ export function htmlMathPlan(
   range: Range,
   read = (node: Text) => node.data,
   snapshot = true,
+  nativeSelection?: string,
 ): HtmlPlan | undefined {
   if (range.collapsed || !range.commonAncestorContainer.isConnected) return;
   const runs: HtmlRun[] = [];
+  const access = snapshot ? selectionAccess() : undefined;
   let count = 0;
   const append = (text: string, node: Text) => {
     if (!text) return;
@@ -75,7 +78,7 @@ export function htmlMathPlan(
         range.compareBoundaryPoints(Range.START_TO_END, bounds) <= 0
       )
         return;
-      const source = literalText(literal, range, read);
+      const source = literalText(literal, range, read, access?.text);
       if (source) {
         count++;
         runs.push({
@@ -89,7 +92,7 @@ export function htmlMathPlan(
     }
     const math = mathRoot(node);
     if (math) {
-      if (math.parentElement?.closest(EXCLUDED)) return;
+      if (math.parentElement?.closest(EXCLUDED) || (access && !access.visible(math))) return;
       if (
         math.matches('[hidden],[aria-hidden="true"]') ||
         getComputedStyle(math).display === 'none' ||
@@ -115,7 +118,7 @@ export function htmlMathPlan(
       return;
     }
     if (node instanceof Text) {
-      if (node.parentElement?.closest(EXCLUDED)) return;
+      if (node.parentElement?.closest(EXCLUDED) || (access && !access.text(node))) return;
       const value = read(node);
       const start = node === range.startContainer ? range.startOffset : 0;
       const end = node === range.endContainer ? range.endOffset : value.length;
@@ -123,7 +126,7 @@ export function htmlMathPlan(
       return;
     }
     if (node instanceof Element) {
-      if (node.closest(EXCLUDED)) return;
+      if (node.closest(EXCLUDED) || (access && !access.visible(node))) return;
       const style = getComputedStyle(node);
       if (style.display === 'none' || style.visibility === 'hidden') return;
       if (node.matches('td,th,tr,caption')) {
@@ -154,6 +157,23 @@ export function htmlMathPlan(
     const last = runs.at(-1) as Extract<HtmlRun, { kind: 'text' }>;
     if (last.node || last.element || last.text.trim()) break;
     runs.pop();
+  }
+  if (snapshot && nativeSelection !== undefined && !matchesNativeSelection(runs, nativeSelection)) {
+    if (!nativeSelection.trim()) return;
+    // CSS can hide/select text in ways a DOM walk cannot reproduce. The native
+    // string is the authority; do not send extra page text to the model.
+    return {
+      source: nativeSelection,
+      runs: nativeSelection
+        .split(/(\r?\n)/)
+        .filter(Boolean)
+        .map((text) => ({
+          kind: 'text',
+          text,
+          ...(/^\r?\n$/.test(text) ? { lineBreak: true } : {}),
+        })),
+      flow: true,
+    };
   }
   const blocks = snapshot ? htmlStructure(runs) : undefined;
   if (!count && !blocks) return;

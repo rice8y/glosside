@@ -19,7 +19,7 @@ Selection and whole-page translation operate in permitted HTTP(S) frames.
 Activate a page through the extension icon, or grant website access in settings.
 Whole-page translation is unavailable when **Show translations only in the side panel** is enabled.
 
-Extraction uses the displayed DOM and selection ranges.
+Extraction uses the displayed DOM and selection ranges. Selection popups exclude nonselectable text and clipped accessibility labels, and check ordinary extracted text against the browser’s native selection. If the structures disagree, the popup uses the native selected text rather than adding surrounding page content.
 Whole-page translation replaces up to 2,000 text nodes while preserving their surrounding elements, including links, form values, and event handlers.
 Each node is translated separately, with surrounding original text supplied as context when it fits; sentences split across inline elements can be less fluent than a continuous passage.
 Hover over translated text to see the original, or use **Restore original** to restore unchanged translated nodes.
@@ -36,7 +36,7 @@ Whitespace follows the source CSS: normal HTML formatting whitespace is collapse
 
 ## Lists in selection popups
 
-Unordered, ordered, and nested HTML lists retain their items in the translated popup, including when the list contains equations. Each paragraph or item is translated separately. Ordered lists retain their starting number, explicit item values, reversed order, and HTML numbering type. Selecting only part of a list keeps the selected items at their original numbers. Copying includes bullet or numeric markers. The popup exposes native list and list-item semantics to accessibility tools.
+HTML lists with rendered bullet or number markers retain their items in the translated popup, including when the list contains equations. Each paragraph or item is translated separately. Ordered lists retain their starting number, explicit item values, reversed order, and HTML numbering type. Selecting only part of a list keeps the selected items at their original numbers. Copying includes bullet or numeric markers. The popup exposes native list and list-item semantics to accessibility tools. Markerless application containers, such as message lists, remain ordinary paragraphs and do not acquire artificial numbering.
 
 ## Tables in selection popups
 

@@ -125,7 +125,7 @@ export class SelectionUI {
     )
       return;
     if (this.pinned && !explicit) return;
-    const plan = !edit ? htmlMathPlan(selectedRange) : undefined;
+    const plan = !edit ? htmlMathPlan(selectedRange, undefined, true, text) : undefined;
     if (!text.trim() && !plan) return;
     this.close();
     this.htmlPlan = plan;
