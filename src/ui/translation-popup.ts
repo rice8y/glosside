@@ -176,6 +176,29 @@ export class TranslationPopup {
   private renderParts(parts: PdfPart[]) {
     this.output.replaceChildren();
     for (const part of parts) {
+      if (part.kind === 'table') {
+        const table = el('table', { class: 'html-table' });
+        const body = el('tbody');
+        for (const row of part.rows) {
+          const tr = el('tr');
+          for (const cell of row) tr.append(el(cell.header ? 'th' : 'td', {}, cell.text));
+          body.append(tr);
+        }
+        table.append(body);
+        this.output.append(
+          el(
+            'div',
+            {
+              class: 'html-table-scroll',
+              tabindex: '0',
+              role: 'region',
+              'aria-label': '翻訳した表（横にスクロールできます）',
+            },
+            table,
+          ),
+        );
+        continue;
+      }
       if (part.kind === 'paragraph') {
         const paragraph = el('div', { class: 'output-prose output-inline' });
         for (const run of part.runs) {

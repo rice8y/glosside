@@ -1,6 +1,8 @@
 // Conservative display-equation detection. Inputs never include fixture coordinates.
 export interface PdfTextItem {
   index: number;
+  markedId?: string;
+  rotated?: boolean;
   str: string;
   x: number;
   y: number;

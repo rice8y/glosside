@@ -6,6 +6,7 @@ import type { Request, TranslationEvent } from '../shared/types';
 import { preparePdfText } from './reflow';
 import {
   pdfPlainText,
+  mayContainMath,
   type PdfInlineRun,
   type PdfPlan,
   type PdfPart,
@@ -27,6 +28,43 @@ export async function translatePdfPlan(
     failed = false;
   for (const part of plan.parts) {
     signal.throwIfAborted();
+    if (part.kind === 'table') {
+      const table = { ...part, rows: part.rows.map((row) => row.map((cell) => ({ ...cell }))) };
+      for (const row of table.rows)
+        for (const cell of row) {
+          signal.throwIfAborted();
+          // Numbers, units attached to numbers, and formula-like cells stay literal.
+          if (
+            failed ||
+            !cell.source.trim() ||
+            /[\p{N}]/u.test(cell.source) ||
+            mayContainMath(cell.source)
+          )
+            continue;
+          const result = await translatePdfPlan(
+            {
+              parts: [
+                { kind: 'text', source: cell.source, text: preparePdfText(cell.source).text },
+              ],
+            },
+            client,
+            init,
+            signal,
+            (id) => {
+              requestId = id;
+              started(id);
+            },
+          );
+          cell.text = result.text ?? cell.source;
+          for (const warning of result.warnings ?? []) warnings.add(warning);
+          if (result.type !== 'complete') {
+            complete = false;
+            failed = true;
+          }
+        }
+      parts.push(table);
+      continue;
+    }
     if (
       (part.kind !== 'text' && part.kind !== 'paragraph') ||
       (part.kind === 'text' && !part.text.trim())

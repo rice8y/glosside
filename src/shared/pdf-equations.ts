@@ -13,7 +13,14 @@ export type PdfInlineRun =
   | { kind: 'text'; text: string }
   | { kind: 'equation'; source: string; image: PdfImage }
   | { kind: 'original'; source: string };
+export interface PdfTable {
+  kind: 'table';
+  source: string;
+  columns: number;
+  rows: { header: boolean; source: string; text: string }[][];
+}
 export type PdfPart =
+  | PdfTable
   | { kind: 'paragraph'; source: string; runs: PdfInlineRun[] }
   | { kind: 'text'; source: string; text: string }
   | { kind: 'original'; source: string }
@@ -44,11 +51,15 @@ export function mayContainMath(source: string): boolean {
 export function pdfPlainText(parts: PdfPart[]): string {
   return parts
     .map((p) =>
-      p.kind === 'paragraph'
-        ? p.runs.map((r) => (r.kind === 'text' ? r.text : r.source)).join('')
-        : p.kind === 'text'
-          ? p.text
-          : p.source,
+      p.kind === 'table'
+        ? '\n' +
+          p.rows.map((row) => row.map((c) => c.text.replace(/\s+/gu, ' ')).join('\t')).join('\n') +
+          '\n'
+        : p.kind === 'paragraph'
+          ? p.runs.map((r) => (r.kind === 'text' ? r.text : r.source)).join('')
+          : p.kind === 'text'
+            ? p.text
+            : p.source,
     )
     .join('');
 }
@@ -62,7 +73,8 @@ export function validPdfPlan(value: unknown, source: string): value is PdfPlan {
     return false;
   if (!Array.isArray(plan.parts) || !plan.parts.length || plan.parts.length > 129) return false;
   let bytes = 0,
-    images = 0;
+    images = 0,
+    cells = 0;
   const validImage = (i: PdfImage) => {
     if (
       !i ||
@@ -85,7 +97,36 @@ export function validPdfPlan(value: unknown, source: string): value is PdfPlan {
   };
   for (const p of plan.parts) {
     if (!p || typeof p.source !== 'string') return false;
-    if (p.kind === 'paragraph') {
+    if (p.kind === 'table') {
+      if (
+        !Number.isInteger(p.columns) ||
+        p.columns < 1 ||
+        p.columns > 12 ||
+        !Array.isArray(p.rows) ||
+        p.rows.length < 2 ||
+        p.rows.length > 40 ||
+        p.rows.some(
+          (row) =>
+            !Array.isArray(row) ||
+            row.length !== p.columns ||
+            row.some(
+              (c) =>
+                !c ||
+                typeof c.header !== 'boolean' ||
+                typeof c.source !== 'string' ||
+                typeof c.text !== 'string' ||
+                c.text !== c.source ||
+                c.source.length > 16000,
+            ),
+        )
+      )
+        return false;
+      cells += p.rows.length * p.columns;
+      if (cells > 256) return false;
+      const compact = (text: string) => text.normalize('NFKC').replace(/\s/gu, '');
+      if (compact(p.rows.flatMap((row) => row.map((c) => c.source)).join('')) !== compact(p.source))
+        return false;
+    } else if (p.kind === 'paragraph') {
       if (!Array.isArray(p.runs) || !p.runs.length || p.runs.length > 65) return false;
       for (const r of p.runs) {
         if (r?.kind === 'text') {

@@ -1,3 +1,11 @@
+import {
+  alignTables,
+  taggedTables,
+  ruledTables,
+  tableLines,
+  PDF_TABLE_WARNING,
+  type TablePage,
+} from './table-alignment';
 import { equationColors } from './image-colors';
 import { sameGlyphLayout, sameRaster } from './image-comparison';
 import { getDocument, PDFWorker, OPS, type PDFDocumentProxy } from 'pdfjs-dist';
@@ -517,14 +525,17 @@ export async function prepareEquations(
     signal.throwIfAborted();
     const pdf = await loading.promise;
     if (pdf.numPages > 100) return originalPdf(source);
-    const pages: PdfTextPage[] = [];
+    const pages: TablePage[] = [];
     let count = 0,
       relevantPages = 0;
     for (let number = 1; number <= pdf.numPages; number++) {
       signal.throwIfAborted();
       const page = await pdf.getPage(number);
       if (page.rotate !== 0) return originalPdf(source);
-      const text = await page.getTextContent({ disableNormalization: true });
+      const text = await page.getTextContent({
+        disableNormalization: true,
+        includeMarkedContent: true,
+      });
       const selected = normalize(source);
       const pageText = normalize(text.items.map((i) => ('str' in i ? i.str : '')).join(''));
       const relevant =
@@ -542,17 +553,29 @@ export async function prepareEquations(
           return false;
         });
       if (relevant && ++relevantPages > 8) return originalPdf(source);
-      const glyphs = relevant
-        ? readGlyphCodes(await page.getOperatorList(), OPS, (name) =>
+      const operators = relevant ? await page.getOperatorList() : undefined;
+      const glyphs = operators
+        ? readGlyphCodes(operators, OPS, (name) =>
             page.commonObjs.has(name) ? page.commonObjs.get(name).embeddedGlyphs : undefined,
           )
         : [];
+      const marked: (string | undefined)[] = [];
       const items = text.items.flatMap((item, index) => {
-        if (!('str' in item)) return [];
+        if (!('str' in item)) {
+          if (item.type === 'endMarkedContent') marked.pop();
+          else marked.push('id' in item ? item.id : marked.at(-1));
+          return [];
+        }
         const style = text.styles[item.fontName];
         return [
           {
             index,
+            markedId: marked.at(-1),
+            rotated:
+              Math.abs(item.transform[1]) > 0.01 ||
+              Math.abs(item.transform[2]) > 0.01 ||
+              item.transform[0] <= 0 ||
+              item.transform[3] <= 0,
             fontName: item.fontName,
             fontLabel:
               relevant && page.commonObjs.has(item.fontName)
@@ -570,126 +593,37 @@ export async function prepareEquations(
       });
       count += items.length;
       if (count > 200_000) return originalPdf(source);
-      pages.push({ number, view: page.view, items, glyphs });
+      const tagged = relevant ? taggedTables(await page.getStructTree(), items) : [];
+      const ruled = operators ? ruledTables(tableLines(operators, OPS), items) : [];
+      // Tagged ownership wins; never reinterpret an unsupported tagged table as a grid.
+      const tables = [
+        ...tagged,
+        ...ruled.filter(
+          (table) => !tagged.some((t) => t.items.some((i) => table.items.includes(i))),
+        ),
+      ];
+      pages.push({ number, view: page.view, items, glyphs, tables });
     }
-    const { matches } = align(pages, source);
-    const selection = alignSelection(pages, source);
-    if (selection) {
-      const ranges = selection.ranges;
-      const merged: MathRange[] = ranges.flatMap((range) => {
-        const overlaps = matches
-          .filter((m) => range.start < m.end && m.start < range.end)
-          .sort((a, b) => a.start - b.start);
-        if (!overlaps.length) return [range];
-        // A legacy display match can cover only part of an unresolved gap.
-        // Keep its unmatched remainder protected rather than treating it as prose.
-        const remaining: MathRange[] = [];
-        let start = range.start;
-        for (const match of overlaps) {
-          if (start < match.start)
-            remaining.push({
-              ...range,
-              start,
-              end: match.start,
-              unresolved: true,
-              display: false,
-              items: [],
-              fragments: [],
-            });
-          start = Math.max(start, match.end);
-        }
-        if (start < range.end)
-          remaining.push({
-            ...range,
-            start,
-            unresolved: true,
-            display: false,
-            items: [],
-            fragments: [],
-          });
-        return remaining;
-      });
-      for (const m of matches)
-        merged.push({
-          start: m.start,
-          end: m.end,
-          page: m.page,
-          items: [],
-          display: true,
-          fontSize: m.fontSize,
-          fragments: [],
-          legacyBox: m.box,
-        });
-      return await rangePlan(
-        pdf,
-        merged.sort((a, b) => a.start - b.start),
-        source,
-        signal,
-        selection.prose,
-      );
-    }
-    const analyzed = analyzeInline(pages, source);
-    const inline = analyzed.matches.filter(
-      (i) => !matches.some((m) => i.start < m.end && m.start < i.end),
-    );
-    if (matches.length > 8 || inline.length > 24) return originalPdf(source);
+    const tables = alignTables(pages, source);
+    if (!tables) return { parts: [{ kind: 'original', source }], warning: PDF_TABLE_WARNING };
+    if (!tables.length) return await textPlan(pdf, pages, source, signal);
     const plan: PdfPlan = { parts: [] };
     let cursor = 0;
-    const prose = async (text: string, offset: number) => {
-      if (!text) return;
-      if (analyzed.unresolved.some((m) => m.start < offset + text.length && offset < m.end)) {
-        plan.parts.push({ kind: 'original', source: text });
-        plan.warning = PDF_ORIGINAL_WARNING;
-        return;
-      }
-      const found = inline.filter((m) => m.start >= offset && m.end <= offset + text.length);
-      if (found.length) {
-        const runs: import('../shared/pdf-equations').PdfInlineRun[] = [];
-        let pos = 0;
-        try {
-          for (const m of found.sort((a, b) => a.start - b.start)) {
-            const chunk = text.slice(pos, m.start - offset);
-            if (mayContainMath(chunk)) throw Error('Unresolved inline math');
-            runs.push({ kind: 'text', text: chunk });
-            runs.push({
-              kind: 'equation',
-              source: source.slice(m.start, m.end),
-              image: await crop(pdf, m.page, m.box, m.fontSize, signal, m.beforeY),
-            });
-            pos = m.end - offset;
-          }
-          const tail = text.slice(pos);
-          if (mayContainMath(tail)) throw Error('Unresolved inline math');
-          runs.push({ kind: 'text', text: tail });
-          plan.parts.push({ kind: 'paragraph', source: text, runs });
-          return;
-        } catch {
-          signal.throwIfAborted();
-        }
-        plan.parts.push({ kind: 'original', source: text });
-        plan.warning = PDF_ORIGINAL_WARNING;
-      } else if (mayContainMath(text)) {
-        plan.parts.push({ kind: 'original', source: text });
-        plan.warning = PDF_ORIGINAL_WARNING;
-      } else plan.parts.push({ kind: 'text', source: text, text: preparePdfText(text).text });
+    const prose = async (value: string) => {
+      if (!value) return;
+      const result = await textPlan(pdf, pages, value, signal);
+      plan.parts.push(...result.parts);
+      if (result.warning) plan.warning = result.warning;
     };
-    for (const m of matches.sort((a, b) => a.start - b.start)) {
-      await prose(source.slice(cursor, m.start), cursor);
-      try {
-        plan.parts.push({
-          kind: 'equation',
-          source: source.slice(m.start, m.end),
-          image: await crop(pdf, m.page, m.box, m.fontSize, signal),
-        });
-      } catch {
-        signal.throwIfAborted();
-        plan.parts.push({ kind: 'original', source: source.slice(m.start, m.end) });
-        plan.warning = PDF_ORIGINAL_WARNING;
-      }
-      cursor = m.end;
+    for (const match of tables) {
+      await prose(source.slice(cursor, match.start));
+      plan.parts.push(match.table);
+      cursor = match.end;
     }
-    await prose(source.slice(cursor), cursor);
-    return validPdfPlan(plan, source) ? plan : originalPdf(source);
+    await prose(source.slice(cursor));
+    return validPdfPlan(plan, source)
+      ? plan
+      : { parts: [{ kind: 'original', source }], warning: PDF_TABLE_WARNING };
   } finally {
     signal.removeEventListener('abort', cancel);
     try {
@@ -699,6 +633,132 @@ export async function prepareEquations(
       port.terminate();
     }
   }
+}
+
+async function textPlan(
+  pdf: PDFDocumentProxy,
+  pages: PdfTextPage[],
+  source: string,
+  signal: AbortSignal,
+): Promise<PdfPlan> {
+  const { matches } = align(pages, source);
+  const selection = alignSelection(pages, source);
+  if (selection) {
+    const ranges = selection.ranges;
+    const merged: MathRange[] = ranges.flatMap((range) => {
+      const overlaps = matches
+        .filter((m) => range.start < m.end && m.start < range.end)
+        .sort((a, b) => a.start - b.start);
+      if (!overlaps.length) return [range];
+      // A legacy display match can cover only part of an unresolved gap.
+      // Keep its unmatched remainder protected rather than treating it as prose.
+      const remaining: MathRange[] = [];
+      let start = range.start;
+      for (const match of overlaps) {
+        if (start < match.start)
+          remaining.push({
+            ...range,
+            start,
+            end: match.start,
+            unresolved: true,
+            display: false,
+            items: [],
+            fragments: [],
+          });
+        start = Math.max(start, match.end);
+      }
+      if (start < range.end)
+        remaining.push({
+          ...range,
+          start,
+          unresolved: true,
+          display: false,
+          items: [],
+          fragments: [],
+        });
+      return remaining;
+    });
+    for (const m of matches)
+      merged.push({
+        start: m.start,
+        end: m.end,
+        page: m.page,
+        items: [],
+        display: true,
+        fontSize: m.fontSize,
+        fragments: [],
+        legacyBox: m.box,
+      });
+    return await rangePlan(
+      pdf,
+      merged.sort((a, b) => a.start - b.start),
+      source,
+      signal,
+      selection.prose,
+    );
+  }
+  const analyzed = analyzeInline(pages, source);
+  const inline = analyzed.matches.filter(
+    (i) => !matches.some((m) => i.start < m.end && m.start < i.end),
+  );
+  if (matches.length > 8 || inline.length > 24) return originalPdf(source);
+  const plan: PdfPlan = { parts: [] };
+  let cursor = 0;
+  const prose = async (text: string, offset: number) => {
+    if (!text) return;
+    if (analyzed.unresolved.some((m) => m.start < offset + text.length && offset < m.end)) {
+      plan.parts.push({ kind: 'original', source: text });
+      plan.warning = PDF_ORIGINAL_WARNING;
+      return;
+    }
+    const found = inline.filter((m) => m.start >= offset && m.end <= offset + text.length);
+    if (found.length) {
+      const runs: import('../shared/pdf-equations').PdfInlineRun[] = [];
+      let pos = 0;
+      try {
+        for (const m of found.sort((a, b) => a.start - b.start)) {
+          const chunk = text.slice(pos, m.start - offset);
+          if (mayContainMath(chunk)) throw Error('Unresolved inline math');
+          runs.push({ kind: 'text', text: chunk });
+          runs.push({
+            kind: 'equation',
+            source: source.slice(m.start, m.end),
+            image: await crop(pdf, m.page, m.box, m.fontSize, signal, m.beforeY),
+          });
+          pos = m.end - offset;
+        }
+        const tail = text.slice(pos);
+        if (mayContainMath(tail)) throw Error('Unresolved inline math');
+        runs.push({ kind: 'text', text: tail });
+        plan.parts.push({ kind: 'paragraph', source: text, runs });
+        return;
+      } catch {
+        signal.throwIfAborted();
+      }
+      plan.parts.push({ kind: 'original', source: text });
+      plan.warning = PDF_ORIGINAL_WARNING;
+    } else if (mayContainMath(text)) {
+      plan.parts.push({ kind: 'original', source: text });
+      plan.warning = PDF_ORIGINAL_WARNING;
+    } else plan.parts.push({ kind: 'text', source: text, text: preparePdfText(text).text });
+  };
+  for (const m of matches.sort((a, b) => a.start - b.start)) {
+    await prose(source.slice(cursor, m.start), cursor);
+    try {
+      plan.parts.push({
+        kind: 'equation',
+        source: source.slice(m.start, m.end),
+        image: await crop(pdf, m.page, m.box, m.fontSize, signal),
+      });
+    } catch {
+      signal.throwIfAborted();
+      plan.parts.push({ kind: 'original', source: source.slice(m.start, m.end) });
+      plan.warning = PDF_ORIGINAL_WARNING;
+    }
+    cursor = m.end;
+  }
+  await prose(source.slice(cursor), cursor);
+  return validPdfPlan(plan, source) ? plan : originalPdf(source);
 }
 
 // Separate from inference so a cancelled selection can tear down PDF.js without
