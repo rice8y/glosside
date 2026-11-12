@@ -45,6 +45,7 @@ export function mountTextTranslator(
   let closed = false;
   let busy = false;
   let swapping = false;
+  let pastePending = false;
   let complete = false;
   let active = '';
   let version = 0;
@@ -158,17 +159,23 @@ export function mountTextTranslator(
       : !client.settings.modelConsent
         ? t('Download the model in Settings to start translating.')
         : settingsModelLabel(model);
+    if (pastePending && ready && hydrated && model.state !== 'CHECKING') {
+      pastePending = false;
+      void translate();
+    }
   }
   function cancel() {
     version++;
+    pastePending = false;
     if (active) client.cancel(active);
     active = '';
     busy = false;
     complete = false;
   }
-  function invalidate() {
+  function invalidate(fromPaste = false) {
     touched = true;
     cancel();
+    pastePending = fromPaste && !!source.value.trim();
     output.textContent = '';
     configuration = configurationKey();
     message();
@@ -226,7 +233,7 @@ export function mountTextTranslator(
     }
   }
   client.onSettings = (s) => {
-    const before = configuration;
+    const before = ready ? configuration : '';
     const glossary = local.has('glossary') ? select('glossary').value : s.activeGlossaryId;
     select('glossary').replaceChildren(new Option(t('No glossary'), ''));
     for (const g of s.glossaries) select('glossary').add(new Option(g.name, g.id));
@@ -262,7 +269,7 @@ export function mountTextTranslator(
       local.add(id);
       invalidate();
     };
-  source.oninput = invalidate;
+  source.oninput = (event) => invalidate(event.inputType === 'insertFromPaste');
 
   function eventStatus(event: TranslationEvent) {
     switch (event.type) {
