@@ -527,26 +527,21 @@ export async function prepareEquations(
     signal.throwIfAborted();
     const pdf = await loading.promise;
     if (pdf.numPages > 100) return originalPdf(source);
-    const pages: TablePage[] = [];
-    let count = 0,
-      relevantPages = 0;
+    const selected = normalize(source);
+    const textPages = [];
+    let count = 0;
     for (let number = 1; number <= pdf.numPages; number++) {
       signal.throwIfAborted();
       const page = await pdf.getPage(number);
-      if (page.rotate !== 0) return originalPdf(source);
       const text = await page.getTextContent({
         disableNormalization: true,
         includeMarkedContent: true,
       });
-      const selected = normalize(source);
       const pageText = normalize(text.items.map((i) => ('str' in i ? i.str : '')).join(''));
       const relevant =
-        (selected.length >= 24 &&
-          (pageText.includes(selected.slice(0, 24)) || pageText.includes(selected.slice(-24)))) ||
-        (selected.length < 24 &&
-          normalize(text.items.map((i) => ('str' in i ? i.str : '')).join('')).includes(
-            selected,
-          )) ||
+        (selected.length < 24
+          ? pageText.includes(selected)
+          : pageText.includes(selected.slice(0, 24)) || pageText.includes(selected.slice(-24))) ||
         text.items.some((item) => {
           if (!('str' in item)) return false;
           const value = normalize(item.str);
@@ -554,7 +549,35 @@ export async function prepareEquations(
             if (selected.includes(value.slice(n, n + 24))) return true;
           return false;
         });
-      if (relevant && ++relevantPages > 8) return originalPdf(source);
+      // A rotated appendix page must not block a selection on another page.
+      // Keep the conservative fallback if the selection could belong to it.
+      if (page.rotate !== 0) {
+        if (relevant) return originalPdf(source);
+        continue;
+      }
+      count += text.items.filter((item) => 'str' in item).length;
+      if (count > 200_000) return originalPdf(source);
+      textPages.push({
+        number,
+        page,
+        text,
+        relevant,
+        full: selected.length >= 24 && pageText.includes(selected),
+      });
+    }
+    // Repeated phrases can make many pages look relevant to a prose selection.
+    // Use whole-selection matches to budget operator extraction in that case;
+    // alignment still checks the text of every unrotated page.
+    const narrow = textPages.filter((entry) => entry.relevant).length > 8;
+    if (narrow) {
+      const fullMatches = textPages.filter((entry) => entry.full).length;
+      if (mayContainMath(source) || fullMatches === 0 || fullMatches > 8)
+        return originalPdf(source);
+    }
+    const pages: TablePage[] = [];
+    for (const { number, page, text, relevant: partial, full } of textPages) {
+      signal.throwIfAborted();
+      const relevant = narrow ? full : partial;
       const operators = relevant ? await page.getOperatorList() : undefined;
       const glyphs = operators
         ? readGlyphCodes(operators, OPS, (name) =>
@@ -593,8 +616,6 @@ export async function prepareEquations(
           },
         ];
       });
-      count += items.length;
-      if (count > 200_000) return originalPdf(source);
       const tagged = relevant ? taggedTables(await page.getStructTree(), items) : [];
       const lines = operators ? tableLines(operators, OPS) : [];
       const ruled = ruledTables(lines, items);
