@@ -62,38 +62,57 @@ export function compactItemText(page: PdfTextPage, item: PdfTextItem, raw = item
     })
     .join('');
 }
+type GlyphAlternative = { values: string[]; requiresSource?: string };
+type GlyphIndex = Map<string, Map<string, GlyphAlternative[]>>;
+const glyphIndexes = new WeakMap<PdfGlyphCode[], GlyphIndex>();
+
+function indexGlyphs(glyphs: PdfGlyphCode[]): GlyphIndex {
+  const cached = glyphIndexes.get(glyphs);
+  if (cached) return cached;
+  const index: GlyphIndex = new Map();
+  for (const glyph of glyphs) {
+    const symbol = /^[\p{S}\p{M}\p{P}\p{Diacritic}]+$/u.test(glyph.unicode);
+    if ((!glyph.decoded && !symbol) || !(glyph.code >= 0 && glyph.code <= 255)) continue;
+    const normalized = compactGlyphText(glyph.unicode);
+    const decoded = glyph.decoded ? compactGlyphText(glyph.decoded) : undefined;
+    const values = [normalized];
+    if (decoded !== undefined) values.push(decoded);
+    if (symbol) {
+      const code = String.fromCharCode(glyph.code);
+      if (glyph.code === 0 || /\s/u.test(code)) values.push('');
+      if (!/\s/u.test(code)) values.push(code);
+    }
+    let font = index.get(glyph.font);
+    if (!font) index.set(glyph.font, (font = new Map()));
+    const add = (char: string, alternative: GlyphAlternative) => {
+      const entries = font.get(char);
+      if (entries) entries.push(alternative);
+      else font.set(char, [alternative]);
+    };
+    if (normalized.length === 1) add(normalized, { values });
+    // A decoded expansion is evidence only when this item contains its glyph.
+    if (normalized.length > 1 && decoded?.length === 1)
+      add(decoded, { values, requiresSource: glyph.unicode });
+  }
+  glyphIndexes.set(glyphs, index);
+  return index;
+}
+
 export function glyphAlternatives(page: PdfTextPage, item: PdfTextItem, text: string): string[][] {
-  return text
-    .split('')
-    .map((char) => [
-      ...new Set([
-        char,
-        ...(page.glyphs ?? [])
-          .filter(
-            (g) =>
-              g.font === item.fontName &&
-              (compactGlyphText(g.unicode) === char ||
-                (compactGlyphText(g.unicode).length > 1 &&
-                  g.decoded &&
-                  compactGlyphText(g.decoded) === char &&
-                  item.str.includes(g.unicode))) &&
-              (g.decoded || /^[\p{S}\p{M}\p{P}\p{Diacritic}]+$/u.test(g.unicode)) &&
-              g.code >= 0 &&
-              g.code <= 255,
-          )
-          .flatMap((g) => [
-            compactGlyphText(g.unicode),
-            ...(g.decoded ? [compactGlyphText(g.decoded)] : []),
-            ...(/^[\p{S}\p{M}\p{P}\p{Diacritic}]+$/u.test(g.unicode)
-              ? g.code === 0
-                ? ['', String.fromCharCode(0)]
-                : /\s/u.test(String.fromCharCode(g.code))
-                  ? ['']
-                  : [String.fromCharCode(g.code)]
-              : []),
-          ]),
-      ]),
-    ]);
+  const font =
+    page.glyphs && item.fontName !== undefined
+      ? indexGlyphs(page.glyphs).get(item.fontName)
+      : undefined;
+  return text.split('').map((char) => {
+    const entries = font?.get(char);
+    if (!entries) return [char];
+    const values = new Set([char]);
+    for (const entry of entries) {
+      if (entry.requiresSource && !item.str.includes(entry.requiresSource)) continue;
+      for (const value of entry.values) values.add(value);
+    }
+    return [...values];
+  });
 }
 export function orderOverlaidAccents(items: PdfTextItem[]): PdfTextItem[] {
   const ordered = [...items];

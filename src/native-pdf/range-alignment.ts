@@ -247,7 +247,6 @@ export function alignSelection(pages: PdfTextPage[], source: string): RangeSelec
     orderOperatorLimits(items, isMath, fontSize);
     let text = '';
     const offsets: number[][] = [];
-    const alternatives: string[][] = [];
     for (let n = 0; n < items.length; n++) {
       let raw = items[n].str;
       if (
@@ -258,7 +257,6 @@ export function alignSelection(pages: PdfTextPage[], source: string): RangeSelec
         raw = raw.slice(0, -1);
       // Keep operators distinct from ordinary letters until comparison.
       const value = compactItemText(page, items[n], raw);
-      alternatives.push(...glyphAlternatives(page, items[n], value));
       offsets.push([text.length, text.length + value.length]);
       text += value;
     }
@@ -274,8 +272,8 @@ export function alignSelection(pages: PdfTextPage[], source: string): RangeSelec
       for (let k = 0; k + 8 <= value.length; k += 4) {
         const seed = value.slice(k, k + 8),
           at = selected.text.indexOf(seed);
-        const unique = text.indexOf(seed) === a + k && text.indexOf(seed, a + k + 1) < 0;
         if (at < 0 || selected.text.indexOf(seed, at + 1) >= 0) continue;
+        const unique = text.indexOf(seed) === a + k && text.indexOf(seed, a + k + 1) < 0;
         let s = at,
           e = at + 8,
           l = a + k,
@@ -348,6 +346,10 @@ export function alignSelection(pages: PdfTextPage[], source: string): RangeSelec
         chain.splice(n, 1);
       } else n++;
     }
+    // Pages without a viable anchor chain never compare glyph alternatives.
+    const alternatives = items.flatMap((item, n) =>
+      glyphAlternatives(page, item, text.slice(offsets[n][0], offsets[n][1])),
+    );
     const same = (a: number, b: number, actual: string) =>
       matchesGlyphText(alternatives.slice(a, b), actual);
     const rangeStart = chain[0].a - chain[0].s;
