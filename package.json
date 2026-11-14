@@ -10,7 +10,8 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run build",
-    "package": "npm run typecheck && node scripts/build.mjs --release && node scripts/package.mjs"
+    "package": "npm run typecheck && node scripts/build.mjs --release && node scripts/package.mjs",
+    "install:local": "node scripts/install-local.mjs"
   },
   "dependencies": {
     "@wllama/wllama": "3.8.1",

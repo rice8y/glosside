@@ -32,8 +32,6 @@ The installer detects the platform, verifies the ZIP's SHA-256 checksum, and ext
 | Linux    | `${XDG_DATA_HOME:-~/.local/share}/glosside/extension` |
 | Windows  | `%LOCALAPPDATA%\Glosside\extension`                   |
 
-On first install, an illustrated guide opens with a **Copy address** button. You can also open `install.html` in the extracted folder.
-
 1. Open `chrome://extensions` and enable **Developer mode**.
 2. Choose **Load unpacked** and select the directory printed by the installer.
 3. In the settings page that opens, choose **Use on all websites** and approve Chrome's permission prompt to enable selection translation across websites.

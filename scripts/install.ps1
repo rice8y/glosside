@@ -1,10 +1,22 @@
 param(
     [string]$Version = 'latest',
-    [string]$InstallDir
+    [string]$InstallDir,
+    [string]$AssetsDir
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+if ($PSBoundParameters.ContainsKey('AssetsDir')) {
+    if (-not $AssetsDir -or $Version -eq 'latest' -or -not $InstallDir) {
+        throw 'Local assets require -AssetsDir, -Version and -InstallDir.'
+    }
+    $localZip = Join-Path $AssetsDir 'glosside-chrome.zip'
+    $localChecksum = "$localZip.sha256"
+    if (-not (Test-Path -LiteralPath $localZip -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $localChecksum -PathType Leaf)) {
+        throw 'Local ZIP or checksum missing. Run npm run package first.'
+    }
+}
 if (-not $InstallDir) {
     if ($env:OS -eq 'Windows_NT') {
         if (-not $env:LOCALAPPDATA) { throw 'LOCALAPPDATA is not set.' }
@@ -21,11 +33,13 @@ if ($InstallDir.TrimEnd([IO.Path]::DirectorySeparatorChar) -eq [IO.Path]::GetPat
     throw 'Choose a dedicated extension directory.'
 }
 $InstallDir = $InstallDir.TrimEnd([char[]]@([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar))
-$repository = 'https://github.com/rice8y/glosside'
-# Windows PowerShell 5.1 may otherwise negotiate older TLS versions.
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-if ($Version -eq 'latest') {
-    $Version = (Invoke-RestMethod -Uri 'https://api.github.com/repos/rice8y/glosside/releases/latest' -Headers @{ 'User-Agent' = 'Glosside-installer' }).tag_name
+if (-not $AssetsDir) {
+    $repository = 'https://github.com/rice8y/glosside'
+    # Windows PowerShell 5.1 may otherwise negotiate older TLS versions.
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    if ($Version -eq 'latest') {
+        $Version = (Invoke-RestMethod -Uri 'https://api.github.com/repos/rice8y/glosside/releases/latest' -Headers @{ 'User-Agent' = 'Glosside-installer' }).tag_name
+    }
 }
 if ($Version -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$') { throw 'Version must be a release tag such as v0.1.0.' }
 $parent = Split-Path -Parent $InstallDir
@@ -48,9 +62,14 @@ try {
     New-Item -ItemType Directory -Path $stage | Out-Null
     $archive = Join-Path $stage 'archive.zip'
     $checksum = Join-Path $stage 'checksum'
-    $base = "$repository/releases/download/$Version"
-    Invoke-WebRequest -UseBasicParsing -Uri "$base/glosside-chrome.zip" -OutFile $archive -TimeoutSec 300
-    Invoke-WebRequest -UseBasicParsing -Uri "$base/glosside-chrome.zip.sha256" -OutFile $checksum -TimeoutSec 60
+    if ($AssetsDir) {
+        Copy-Item -LiteralPath $localZip -Destination $archive
+        Copy-Item -LiteralPath $localChecksum -Destination $checksum
+    } else {
+        $base = "$repository/releases/download/$Version"
+        Invoke-WebRequest -UseBasicParsing -Uri "$base/glosside-chrome.zip" -OutFile $archive -TimeoutSec 300
+        Invoke-WebRequest -UseBasicParsing -Uri "$base/glosside-chrome.zip.sha256" -OutFile $checksum -TimeoutSec 60
+    }
     $check = (Get-Content -LiteralPath $checksum -Raw).Trim()
     if ($check -notmatch '^([a-f0-9]{64})  glosside-chrome\.zip$') { throw 'Invalid checksum file.' }
     $expected = $Matches[1]
@@ -83,28 +102,65 @@ try {
 if ($isUpdate) {
     Write-Host "`nGlosside $Version updated."
     Write-Host 'Open chrome://extensions in Chrome, click Reload on Glosside, then refresh your open pages.'
-} else {
-    Write-Host "`nGlosside $Version installed in:`n$InstallDir`n"
-    Write-Host 'Open chrome://extensions, enable Developer mode, and select this directory with Load unpacked.'
+    return
 }
-$guide = Join-Path $InstallDir 'install.html'
-if (-not $isUpdate -and (Test-Path -LiteralPath $guide -PathType Leaf)) {
-    Write-Host "`nVisual guide: $guide"
-    try {
-        if ($env:OS -eq 'Windows_NT') {
-            try {
-                Start-Process -FilePath 'chrome.exe' -ArgumentList (([uri]::new($guide)).AbsoluteUri)
-            } catch {
-                Invoke-Item -LiteralPath $guide
+
+Write-Host "`nGlosside $Version installed in:`n$InstallDir`n"
+Write-Host 'Open chrome://extensions, enable Developer mode, and select this directory with Load unpacked.'
+$instructions = Join-Path $InstallDir 'install.html'
+if (-not (Test-Path -LiteralPath $instructions -PathType Leaf)) { return }
+Write-Host "`nInstallation instructions: $instructions"
+if ([Console]::IsInputRedirected) { return }
+
+try {
+    $choice = Read-Host 'Open in Google Chrome [o], copy URL [c], or skip [Enter]'
+} catch {
+    return
+}
+
+function Get-InstructionsUrl {
+    $path = if ($env:OS -eq 'Windows_NT') { $instructions.Replace('\', '/') } else { $instructions }
+    $escapedPath = [regex]::Replace($path, '[^/:]+', {
+        param($segment)
+        [uri]::EscapeDataString($segment.Value)
+    })
+    if ($escapedPath.StartsWith('//')) { return "file:$escapedPath" }
+    if ($escapedPath.StartsWith('/')) { return "file://$escapedPath" }
+    return "file:///$escapedPath"
+}
+
+switch ($choice) {
+    'o' {
+        try {
+            if ($env:OS -eq 'Windows_NT') {
+                Start-Process -FilePath 'chrome.exe' -ArgumentList (Get-InstructionsUrl)
+            } elseif ((uname -s) -eq 'Darwin') {
+                & open -a 'Google Chrome' $instructions
+                if ($LASTEXITCODE -ne 0) { throw 'Chrome launch failed.' }
+            } else {
+                $chrome = Get-Command google-chrome, google-chrome-stable -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+                if (-not $chrome -or (-not $env:DISPLAY -and -not $env:WAYLAND_DISPLAY)) {
+                    throw 'Chrome unavailable.'
+                }
+                Start-Process -FilePath $chrome.Source -ArgumentList (Get-InstructionsUrl)
             }
-        } elseif ((uname -s) -eq 'Darwin') {
-            & open -a 'Google Chrome' $guide 2>$null
-            if ($LASTEXITCODE -ne 0) { & open $guide 2>$null }
-        } elseif ($env:DISPLAY -or $env:WAYLAND_DISPLAY) {
-            $opener = Get-Command google-chrome, google-chrome-stable, xdg-open -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($opener) { Start-Process -FilePath $opener.Source -ArgumentList (([uri]::new($guide)).AbsoluteUri) }
+        } catch {
+            Write-Warning 'Could not open Google Chrome. Open the installation instructions at the path above.'
         }
-    } catch {
-        Write-Warning 'Open the visual guide manually.'
+    }
+    'c' {
+        $url = Get-InstructionsUrl
+        try {
+            if ($env:OS -ne 'Windows_NT' -and $env:WAYLAND_DISPLAY -and
+                (Get-Command wl-copy -CommandType Application -ErrorAction SilentlyContinue)) {
+                wl-copy -- $url
+                if ($LASTEXITCODE -ne 0) { throw 'Clipboard unavailable.' }
+            } else {
+                Set-Clipboard -Value $url
+            }
+            Write-Host "URL copied. Paste it into your browser's address bar."
+        } catch {
+            Write-Host "Copy this URL into your browser: $url"
+        }
     }
 }
