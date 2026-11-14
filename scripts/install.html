@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Install Glosside in Chrome</title>
+    <style>
+      :root {
+        font-family: Inter, system-ui, sans-serif;
+        line-height: 1.55;
+        color: #292435;
+        background: #f7f6fb;
+        --brand: #5a2bdb;
+        --surface: #fff;
+        --border: #ded8eb;
+        --muted: #5f566d;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      main {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: clamp(1.25rem, 5vw, 3.5rem) 1rem;
+      }
+      header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.65rem 1rem;
+        margin-bottom: 1.25rem;
+      }
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+      h1 {
+        font-size: clamp(1.5rem, 5vw, 2.1rem);
+        line-height: 1.25;
+      }
+      h2 {
+        font-size: 1.05rem;
+      }
+      button,
+      input {
+        font: inherit;
+      }
+      button {
+        padding: 0.4rem 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+        background: var(--surface);
+        color: var(--brand);
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #f0ebfc;
+      }
+      button:focus-visible,
+      input:focus-visible {
+        outline: 2px solid var(--brand);
+        outline-offset: 2px;
+      }
+      ol {
+        margin: 0;
+        padding-left: 1.5rem;
+      }
+      li + li {
+        margin-top: 1.35rem;
+      }
+      li::marker {
+        color: var(--brand);
+        font-weight: 700;
+      }
+      li p,
+      .update p {
+        margin-top: 0.25rem;
+        color: var(--muted);
+      }
+      .copy-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.55rem;
+      }
+      .copy-row input {
+        width: 100%;
+        min-width: 0;
+        padding: 0.44rem 0.65rem;
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+        background: var(--surface);
+        color: inherit;
+        font-family: ui-monospace, monospace;
+        font-size: 0.85rem;
+      }
+      .copy-row button {
+        flex: none;
+      }
+      #copy-status {
+        color: var(--brand);
+      }
+      #copy-status:not(:empty) {
+        margin-top: 0.4rem;
+      }
+      .preview {
+        margin: 0.65rem 0 0;
+        border: 1px solid var(--border);
+        border-radius: 0.65rem;
+        overflow: hidden;
+        background: var(--surface);
+        font-size: 0.86rem;
+      }
+      .toolbar,
+      .actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        padding: 0.7rem 0.8rem;
+      }
+      .toolbar {
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border);
+      }
+      .highlight {
+        display: inline-flex;
+        max-width: 100%;
+        align-items: center;
+        gap: 0.45rem;
+        border: 2px solid var(--brand);
+        border-radius: 0.4rem;
+        padding: 0.2rem 0.45rem;
+        color: var(--brand);
+        font-weight: 600;
+      }
+      .toggle {
+        display: inline-flex;
+        flex: none;
+        width: 1.8rem;
+        padding: 0.15rem;
+        justify-content: flex-end;
+        border-radius: 1rem;
+        background: var(--brand);
+      }
+      .toggle::after {
+        content: '';
+        width: 0.7rem;
+        height: 0.7rem;
+        border-radius: 50%;
+        background: white;
+      }
+      .actions > span + span {
+        color: var(--muted);
+      }
+      .update {
+        margin-top: 1.6rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+      }
+      @media (max-width: 28rem) {
+        .copy-row {
+          flex-wrap: wrap;
+        }
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          color: #f3eff9;
+          background: #201b29;
+          --brand: #cbb6ff;
+          --surface: #2b2437;
+          --border: #564b65;
+          --muted: #c8bdd6;
+        }
+        button:hover {
+          background: #403653;
+        }
+        .toggle::after {
+          background: #2b2437;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1 data-ja="Glosside を Chrome に追加">Install Glosside in Chrome</h1>
+        <button type="button" id="language" lang="ja">日本語</button>
+      </header>
+      <ol>
+        <li>
+          <h2 data-ja="Chrome の拡張機能ページを開く">Open Chrome’s Extensions page</h2>
+          <p data-ja="下のアドレスをコピーし、Chrome のアドレスバーに貼り付けて Enter を押します。">
+            Copy the address below, paste it into Chrome’s address bar, and press Enter.
+          </p>
+          <div class="copy-row">
+            <input
+              id="extensions-url"
+              aria-label="Extensions page address"
+              value="chrome://extensions"
+              readonly
+            />
+            <button type="button" data-copy="extensions-url" data-ja="アドレスをコピー">
+              Copy address
+            </button>
+          </div>
+        </li>
+        <li>
+          <h2 data-ja="右上の「デベロッパー モード」をオンにする">
+            Turn on Developer mode in the top right
+          </h2>
+          <div class="preview" aria-hidden="true">
+            <div class="toolbar">
+              <strong data-ja="拡張機能">Extensions</strong>
+              <span class="highlight">
+                <span data-ja="デベロッパー モード">Developer mode</span>
+                <span class="toggle"></span>
+              </span>
+            </div>
+            <div class="actions">
+              <span class="highlight" data-ja="パッケージ化されていない拡張機能を読み込む"
+                >Load unpacked</span
+              >
+              <span data-ja="拡張機能をパッケージ化">Pack extension</span>
+            </div>
+          </div>
+        </li>
+        <li>
+          <h2 data-ja="「パッケージ化されていない拡張機能を読み込む」を押す">
+            Click Load unpacked
+          </h2>
+          <p data-ja="フォルダー選択画面で、このフォルダーを指定します。">
+            Select this folder in the file picker.
+          </p>
+          <div class="copy-row">
+            <input id="extension-folder" aria-label="Glosside folder path" readonly />
+            <button type="button" data-copy="extension-folder" data-ja="パスをコピー">
+              Copy path
+            </button>
+          </div>
+          <p
+            id="mac-picker"
+            hidden
+            data-ja="Mac では、選択画面で ⌘ + Shift + G を押すとパスを貼り付けられます。"
+          >
+            On Mac, press ⌘ + Shift + G in the picker to paste the path.
+          </p>
+          <p data-ja="読み込みが完了すると、Glosside の設定が開きます。">
+            Glosside settings open after Chrome loads the extension for the first time.
+          </p>
+        </li>
+      </ol>
+      <p id="copy-status" role="status"></p>
+      <section class="update" aria-labelledby="update-title">
+        <h2 id="update-title" data-ja="すでに読み込んでいる場合">Already loaded Glosside?</h2>
+        <p
+          data-ja="拡張機能ページで Glosside の再読み込みボタン（↻）を押し、翻訳するページも再読み込みします。"
+        >
+          Click Reload (↻) on the Glosside card, then refresh any pages you want to translate.
+        </p>
+      </section>
+    </main>
+    <script>
+      const address = document.querySelector('#extensions-url');
+      const folder = document.querySelector('#extension-folder');
+      const path = decodeURIComponent(
+        location.pathname.slice(0, location.pathname.lastIndexOf('/')),
+      );
+      const windows = /^\/\w:\//.test(path) || location.hostname;
+      folder.value = windows
+        ? (location.hostname ? '//' + location.hostname + path : path.slice(1)).replaceAll(
+            '/',
+            '\\',
+          )
+        : path;
+      document.querySelector('#mac-picker').hidden = !navigator.platform.startsWith('Mac');
+
+      const languageButton = document.querySelector('#language');
+      const status = document.querySelector('#copy-status');
+      const copyButtons = document.querySelectorAll('[data-copy]');
+      const translations = Array.from(document.querySelectorAll('[data-ja]'), (element) => ({
+        element,
+        en: element.textContent.trim(),
+        ja: element.dataset.ja,
+      }));
+      let japanese;
+      function setLanguage(useJapanese) {
+        japanese = useJapanese;
+        document.documentElement.lang = japanese ? 'ja' : 'en';
+        for (const { element, en, ja } of translations) element.textContent = japanese ? ja : en;
+        address.setAttribute(
+          'aria-label',
+          japanese ? '拡張機能ページのアドレス' : 'Extensions page address',
+        );
+        folder.setAttribute(
+          'aria-label',
+          japanese ? 'Glosside フォルダーのパス' : 'Glosside folder path',
+        );
+        document.title = document.querySelector('h1').textContent;
+        languageButton.textContent = japanese ? 'English' : '日本語';
+        languageButton.lang = japanese ? 'en' : 'ja';
+        status.textContent = '';
+      }
+      setLanguage(navigator.language.toLowerCase().startsWith('ja'));
+      languageButton.addEventListener('click', () => setLanguage(!japanese));
+      for (const button of copyButtons) {
+        button.addEventListener('click', async () => {
+          const input = document.getElementById(button.dataset.copy);
+          input.parentElement.after(status);
+          status.textContent = '';
+          try {
+            await navigator.clipboard.writeText(input.value);
+            status.textContent = japanese ? 'コピーしました。' : 'Copied.';
+          } catch {
+            input.focus();
+            input.select();
+            status.textContent = japanese
+              ? '選択したテキストをコピーしてください。'
+              : 'Copy the selected text.';
+          }
+        });
+      }
+    </script>
+  </body>
+</html>

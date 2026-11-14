@@ -16,8 +16,9 @@ while [ "$#" -gt 0 ]; do
     *) fail "Unknown argument: $1" ;;
   esac
 done
+platform=$(uname -s)
 if [ -z "$install_dir" ]; then
-  case "$(uname -s)" in
+  case "$platform" in
     Darwin) install_dir="${HOME:?HOME is required}/Library/Application Support/Glosside/extension" ;;
     Linux) install_dir="${XDG_DATA_HOME:-${HOME:?HOME is required}/.local/share}/glosside/extension" ;;
     MINGW*|MSYS*|CYGWIN*)
@@ -44,10 +45,6 @@ parent=$(dirname "$install_dir")
 mkdir -p "$parent"
 parent=$(cd "$parent" && pwd -P)
 install_dir="$parent/${install_dir##*/}"
-[ ! -L "$install_dir" ] || fail 'The installation directory must not be a symlink.'
-if [ -e "$install_dir" ]; then
-  [ -d "$install_dir" ] && [ -f "$install_dir/.glosside-install" ] && [ "$(cat "$install_dir/.glosside-install")" = glosside-v1 ] || fail "Refusing to replace an unmanaged directory: $install_dir"
-fi
 lock="$install_dir.install-lock"
 mkdir "$lock" 2>/dev/null || fail 'Another installation is running (or an old install lock needs removal).'
 stage=
@@ -62,6 +59,12 @@ cleanup() {
 }
 trap cleanup EXIT
 trap 'exit 1' HUP INT TERM
+is_update=false
+[ ! -L "$install_dir" ] || fail 'The installation directory must not be a symlink.'
+if [ -e "$install_dir" ]; then
+  [ -d "$install_dir" ] && [ -f "$install_dir/.glosside-install" ] && [ "$(cat "$install_dir/.glosside-install")" = glosside-v1 ] || fail "Refusing to replace an unmanaged directory: $install_dir"
+  is_update=true
+fi
 stage=$(mktemp -d "$parent/.glosside-install.XXXXXX")
 base="$repository/releases/download/$version"
 fetch --output "$stage/archive.zip" "$base/glosside-chrome.zip"
@@ -79,7 +82,39 @@ unzip -q "$stage/archive.zip" -d "$stage/unpacked"
 installed_version=$(sed -n 's/^[[:space:]]*"version":[[:space:]]*"\([^" ]*\)".*/\1/p' "$stage/unpacked/glosside/manifest.json")
 [ "$installed_version" = "${version#v}" ] || fail 'Unexpected extension version.'
 printf 'glosside-v1\n' > "$stage/unpacked/glosside/.glosside-install"
-if [ -e "$install_dir" ]; then mv "$install_dir" "$stage/previous"; fi
+if "$is_update"; then mv "$install_dir" "$stage/previous"; fi
 mv "$stage/unpacked/glosside" "$install_dir"
+cleanup
+trap - EXIT
+
+if "$is_update"; then
+  printf '\nGlosside %s updated.\nOpen chrome://extensions in Chrome, click Reload on Glosside, then refresh your open pages.\n' "$version"
+  exit 0
+fi
+
 printf '\nGlosside %s installed in:\n%s\n\n' "$version" "$install_dir"
-printf 'Open chrome://extensions, enable Developer mode, and select this directory with Load unpacked.\nFor an update, click Reload on Glosside and reload your open pages.\n'
+printf 'Open chrome://extensions, enable Developer mode, and select this directory with Load unpacked.\n'
+
+guide="$install_dir/install.html"
+if [ -f "$guide" ]; then
+  printf '\nVisual guide: %s\n' "$guide"
+  case "$platform" in
+    Darwin)
+      open -a 'Google Chrome' "$guide" >/dev/null 2>&1 ||
+        open "$guide" >/dev/null 2>&1 || : ;;
+    Linux)
+      if [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]; then
+        if command -v google-chrome >/dev/null 2>&1; then
+          google-chrome "$guide" </dev/null >/dev/null 2>&1 &
+        elif command -v google-chrome-stable >/dev/null 2>&1; then
+          google-chrome-stable "$guide" </dev/null >/dev/null 2>&1 &
+        elif command -v xdg-open >/dev/null 2>&1; then
+          xdg-open "$guide" </dev/null >/dev/null 2>&1 &
+        fi
+      fi ;;
+    MINGW*|MSYS*|CYGWIN*)
+      if command -v cygpath >/dev/null 2>&1 && guide_windows=$(cygpath -w "$guide"); then
+        explorer.exe "$guide_windows" >/dev/null 2>&1 || :
+      fi ;;
+  esac
+fi

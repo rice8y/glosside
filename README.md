@@ -32,12 +32,14 @@ The installer detects the platform, verifies the ZIP's SHA-256 checksum, and ext
 | Linux    | `${XDG_DATA_HOME:-~/.local/share}/glosside/extension` |
 | Windows  | `%LOCALAPPDATA%\Glosside\extension`                   |
 
+On first install, an illustrated guide opens with a **Copy address** button. You can also open `install.html` in the extracted folder.
+
 1. Open `chrome://extensions` and enable **Developer mode**.
 2. Choose **Load unpacked** and select the directory printed by the installer.
 3. In the settings page that opens, choose **Use on all websites** and approve Chrome's permission prompt to enable selection translation across websites.
 4. Review the model license and download the model (about 573 MB).
 
-To update, run the installer again, click **Reload** on Glosside in `chrome://extensions`, and reload your open pages. Keep the installation directory in place while using the extension.
+To update, run the installer again. The terminal prompts you to open `chrome://extensions`, click **Reload** on Glosside, and refresh your open pages. Keep the installation directory in place.
 
 You can also [download the ZIP directly](https://github.com/rice8y/glosside/releases/latest/download/glosside-chrome.zip), extract it, and load its `glosside` folder manually. The ZIP is shared across platforms; model weights are downloaded separately.
 
